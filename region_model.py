@@ -25,10 +25,12 @@ class region_model:
         d_sus = -1*(self.beta*self.susceptible[t - 1]*self.infected[t - 1])/self.N
         d_inf = (self.beta*self.susceptible[t - 1]*self.infected[t - 1])/self.N - self.gamma*self.infected[t - 1] 
         d_rec = self.gamma*self.infected[t - 1]
-        
+
         self.susceptible.append(self.susceptible[t-1] + d_sus)
         self.infected.append(self.infected[t-1] + d_inf)
         self.recovered.append(self.recovered[t-1] + d_rec - d_dea)
         self.dead.append(self.dead[t-1] + d_dea)
         self.units += 1
-        print(self.susceptible[-1] + self.infected[-1] + self.recovered[-1] + self.dead[-1])
+        
+        populationCheck = self.susceptible[-1] + self.infected[-1] + self.recovered[-1] + self.dead[-1]
+        print(int(populationCheck))
