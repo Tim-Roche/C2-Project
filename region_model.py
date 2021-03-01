@@ -31,6 +31,6 @@ class region_model:
         self.recovered.append(self.recovered[t-1] + d_rec - d_dea)
         self.dead.append(self.dead[t-1] + d_dea)
         self.units += 1
-        
+
         populationCheck = self.susceptible[-1] + self.infected[-1] + self.recovered[-1] + self.dead[-1]
-        print(int(populationCheck))
+        print(round(populationCheck))
