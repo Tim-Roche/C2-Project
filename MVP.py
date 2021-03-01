@@ -3,16 +3,17 @@ from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
-from model import model
+from region_model import region_model
  
 fig = plt.figure()
 ax1 = fig.add_subplot(1,1,1)
 
 dt = 1 #Day
 SIMULATION_TIME = 160 #Days 
+FRAMES_SECOND = 50
 units = SIMULATION_TIME/dt
 
-m = model()
+m = region_model()
 
 def animate(i):
     m.tickTime()
@@ -23,5 +24,5 @@ def animate(i):
     ax1.plot(m.time, m.recovered, label='Recovered')
     ax1.legend()
     
-ani = animation.FuncAnimation(fig, animate, interval=50)
+ani = animation.FuncAnimation(fig, animate, interval=FRAMES_SECOND)
 plt.show()

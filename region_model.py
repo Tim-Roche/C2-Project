@@ -1,4 +1,4 @@
-class model:
+class region_model:
     def __init__(self, N=1000, I0=1, R0=0, beta=0.2, gamma=1./10):
         # Total population, N.
         self.N = 1000
