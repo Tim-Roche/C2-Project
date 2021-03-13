@@ -23,6 +23,7 @@ def animate(i):
     ax1.plot(m.time, m.susceptible, label='Susceptible')
     ax1.plot(m.time, m.recovered, label='Recovered')
     ax1.plot(m.time, m.dead, label='Dead')
+    ax1.plot(m.time, m.vaccinated, label='Fully Vaccinated')
     ax1.legend()
     
 ani = animation.FuncAnimation(fig, animate, interval=FRAMES_SECOND)

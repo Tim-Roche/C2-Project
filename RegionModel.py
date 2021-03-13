@@ -1,4 +1,5 @@
 import math
+import numpy as np
 from Report import Report
 
 class RegionModel:
@@ -20,9 +21,12 @@ class RegionModel:
         self.time = [0]
         self.units = 1
         self.dt = 1
-        self.vaccine_count = 200
-        self.vac_q = []
+        self.vaccine_count = 10 #Vaccines received from state; Per Week
+        self.vaccine_limit = 10 #Vaccines can be distro-ed in a week; Per Week
+        self.max_d_vac =  min(self.vaccine_count, self.vaccine_limit)/7 
         self.death_rate = 0.018
+
+        self.vac_q = []
         self.vac_flag = False
 
     def get_vaccine(self, vac):
@@ -31,27 +35,32 @@ class RegionModel:
     def tick_time(self):
         t = self.units*self.dt
         self.time.append(t)
+
+        d_vacB = 0
+        if(len(self.vac_q) >= 28):
+            d_vacB = min(float(self.vac_q[:1][0]), self.max_d_vac)
+            self.vac_q = self.vac_q[1:]
+
+        d_vacA = min(self.susceptible[t - 1], self.max_d_vac - d_vacB)
+        self.vac_q.append(d_vacA)
+
         d_dea = 0
         if len(self.dead) >= 14:
-            d_dea = min(math.ceil(self.infected[t-14]*self.death_rate), self.infected[t-1])
-        d_sus_inf = min(math.ceil((self.beta*self.susceptible[t - 1]*(self.infected[t - 1]))/self.N - self.gamma*(self.infected[t - 1])), self.susceptible[t - 1])
-        d_vac_inf = min(math.ceil((self.beta * self.vaccinated[t - 1] * (self.infected[t - 1])) / self.N - self.gamma * (self.infected[t - 1])), self.vaccinated[t - 1])
-        d_rec = min(math.ceil(self.gamma*(self.infected[t - 1])), self.infected[t - 1])
-        d_vac = min(min(math.ceil(0.005*self.susceptible[t - 1]), self.susceptible[t - 1]), self.vaccine_count)  # Issue with d_vac_inf
-        self.vaccine_count -= d_vac
-        self.vac_q.append(d_vac)
-        if len(self.vac_q) == 28 or self.vac_flag:
-            self.vac_flag = True
-            d_vac -= self.vac_q[0] + d_vac_inf
-            d_rec += self.vac_q[0]
-            del self.vac_q[0]
-        self.infected.append(self.infected[t - 1] + d_sus_inf + d_vac_inf - d_dea)
+            d_dea = min(self.infected[t-14]*self.death_rate, self.infected[t-1])
+        d_sus = -1*(self.beta*self.susceptible[t - 1]*self.infected[t - 1])/self.N
+        d_sus = min(d_sus - d_vacA,0)
+        d_inf = -1*d_sus - self.gamma*self.infected[t - 1]
+        d_rec = self.gamma*self.infected[t - 1]
+
+        self.vaccinated.append(self.vaccinated[t - 1] + d_vacB)
+        self.susceptible.append(self.susceptible[t-1] + d_sus - d_vacA)
+        self.infected.append(self.infected[t-1] + d_inf - d_dea)
         self.recovered.append(self.recovered[t-1] + d_rec)
         self.dead.append(self.dead[t-1] + d_dea)
-        self.vaccinated.append(self.vaccinated[t-1] + d_vac)
-        self.susceptible.append(self.N - self.infected[t] - self.recovered[t] - self.dead[t] - self.vaccinated[t])
         self.units += 1
+
+        populationCheck = self.susceptible[-1] + self.infected[-1] + self.recovered[-1] + self.dead[-1] + self.vaccinated[-1] 
+        print(round(populationCheck))
         report = Report(self.name, self.N, self.infected[t], self.dead[t], self.susceptible[t], self.recovered[t], self.beta, t)
-        #print(self.susceptible[t] + self.infected[t] + self.recovered[t] + self.dead[t] + self.vaccinated[t])
-        print(self.vac_q)
         return report
+        
