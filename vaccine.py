@@ -6,10 +6,9 @@ class vaccine():
         
     def vaccinate(self,num):
         self.vaccineCount -= num
-        print("---" + self.name + "---")
-        print("Vaccinated " + str(num) + " poeple")
-        print("Remaining: " + str(self.vaccineCount))
-
+        #print("---" + self.name + "---")
+        #print("Vaccinated " + str(num) + " poeple")
+        #print("Remaining: " + str(self.vaccineCount))
 
     def addToQueue(self, d_vacA):
         self.vac_q.append(d_vacA)

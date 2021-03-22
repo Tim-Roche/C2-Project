@@ -6,7 +6,8 @@ import numpy as np
 from RegionModel import RegionModel
  
 fig = plt.figure()
-ax1 = fig.add_subplot(1,1,1)
+ax1 = fig.add_subplot(1,2,1)
+ax2 = fig.add_subplot(1,2,2)
 
 dt = 1 #Day
 SIMULATION_TIME = 160 #Days 
@@ -24,7 +25,12 @@ def animate(i):
     ax1.plot(m.time, m.recovered, label='Recovered')
     ax1.plot(m.time, m.dead, label='Dead')
     ax1.plot(m.time, m.vaccinated, label='Fully Vaccinated')
+    ax1.plot(m.time, m.susHR, label='High Risk Population')
     ax1.legend()
     
+    #ax2.clear()
+    #ax2.plot(m.time, m.susHR, label='High Risk Population')
+    #ax2.legend()
+
 ani = animation.FuncAnimation(fig, animate, interval=FRAMES_SECOND)
 plt.show()
