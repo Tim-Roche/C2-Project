@@ -7,7 +7,7 @@ from RegionModel import RegionModel
  
 fig = plt.figure()
 ax1 = fig.add_subplot(1,2,1)
-ax2 = fig.add_subplot(1,2,2)
+#ax2 = fig.add_subplot(1,2,2)
 
 dt = 1 #Day
 SIMULATION_TIME = 160 #Days 
