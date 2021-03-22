@@ -108,5 +108,6 @@ class RegionModel:
 
         populationCheck = self.susceptible[-1] + self.infected[-1] + self.recovered[-1] + self.dead[-1] + self.vaccinated[-1] + sum(self.vacTypes['pfizer'].vac_q) + sum(self.vacTypes['moderna'].vac_q)
         #print(round(populationCheck))
-        report = Report(self.name, self.N, self.infected[t], self.dead[t], self.susceptible[t], self.recovered[t], self.beta, t)
+        report = Report(self.name, self.N, self.infected[t], self.dead[t], self.susceptible[t], self.recovered[t], self.vaccinated,
+                        self.vacTypes['pfizer'].vaccineCount, self.vacTypes['moderna'].vaccineCount, self.beta, t)
         return report
