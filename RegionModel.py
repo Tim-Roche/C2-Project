@@ -24,8 +24,8 @@ class RegionModel:
         self.time = [0]
         self.units = 1
         self.dt = 1
-        self.vaccine_pfizer_count = 5 #Phizers recieved on a weekly basis
-        self.vaccine_moderna_count = 5 #Modernas recieved on a weekly basis
+        self.vaccine_pfizer_count = 0 #Phizers recieved on a weekly basis
+        self.vaccine_moderna_count = 0 #Modernas recieved on a weekly basis
         self.vaccine_distro_limit = 10 #Vaccines can be distro-ed in a week; Per Week
         self.max_d_vac = self.vaccine_distro_limit/7 #min(self.vaccine_count, self.vaccine_limit)/7 
         self.death_rate = {"normal": 0.018, "high":0.05}
@@ -38,8 +38,10 @@ class RegionModel:
     def tick_time(self):
         t = self.units*self.dt
         self.time.append(t)
-        self.vacTypes['pfizer'].addVaccines(self.vaccine_pfizer_count/7)
-        self.vacTypes['moderna'].addVaccines(self.vaccine_moderna_count/7)
+        self.vacTypes['pfizer'].addVaccines(self.vaccine_pfizer_count)
+        self.vacTypes['moderna'].addVaccines(self.vaccine_moderna_count)
+        self.vaccine_moderna_count = 0
+        self.vaccine_pfizer_count = 0
 
         #DOSE B - 2nd dose gets priority 
 
