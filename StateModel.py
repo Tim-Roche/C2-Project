@@ -32,7 +32,7 @@ class StateModel:
         state_report.set_available_pfizer(self._pfizer)
         state_report.set_available_moderna(self._moderna)
         if state_report.get_day() % 7 == 0:
-            self._get_vaccines()
+            self._get_vaccines(state_report.get_day())
         return state_report, reports
 
     def get_state_report(self, reports):
@@ -46,7 +46,7 @@ class StateModel:
         return state_report
 
     def _get_vaccines(self, day):
-        self._phizer += int((day/7)*1000)
+        self._pfizer += int((day/7)*1000)
         self._moderna += int((day/7)*1000)
 
     def distribute_vaccines(self, pfizer_plan, moderna_plan):
@@ -64,8 +64,8 @@ class StateModel:
 
 
 
-state = StateModel(2,1)
-for i in range(0,2):
+state = StateModel(10,10)
+for i in range(0, 60):
     print("---- Time: " + str(i) + " ----")
     sr, rr = state.tick_time()
     print("State Report")
