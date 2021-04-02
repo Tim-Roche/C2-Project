@@ -21,6 +21,12 @@ class StateModel:
                 region_num += 1
             self._regions.append(row_array)
 
+    def get_region(self,x,y):
+        return self._regions[x][y]
+
+    def get_all_regions(self):
+        return(self._regions)
+
     def tick_time(self):
         reports = []
         for row in range(0, self._rows):
@@ -29,10 +35,13 @@ class StateModel:
                 row_reports.append(self._regions[row][col].tick_time())
             reports.append(row_reports)
         state_report = self.get_state_report(reports)
-        state_report.set_available_pfizer(self._pfizer)
-        state_report.set_available_moderna(self._moderna)
+
         if state_report.get_day() % 7 == 0:
             self._get_vaccines(state_report.get_day())
+
+        state_report.set_available_pfizer(self._pfizer)
+        state_report.set_available_moderna(self._moderna)
+
         return state_report, reports
 
     def get_state_report(self, reports):
@@ -54,7 +63,7 @@ class StateModel:
         prev_moderna = self._moderna
         for row in range(0, self._rows):
             for col in range(0, self._columns):
-                d_pfizer = min(round(pfizer_plan[row][col]*prev_pfizer), self._phizer)
+                d_pfizer = min(round(pfizer_plan[row][col]*prev_pfizer), self._pfizer)
                 d_moderna = min(round(moderna_plan[row][col]*prev_moderna), self._moderna)
                 self._regions[row][col].vaccine_pfizer_count += d_pfizer
                 self._regions[row][col].vaccine_moderna_count += d_moderna
@@ -64,9 +73,9 @@ class StateModel:
 
 
 
-state = StateModel(10,10)
-for i in range(0, 60):
-    print("---- Time: " + str(i) + " ----")
-    sr, rr = state.tick_time()
-    print("State Report")
-    print(sr)
+#state = StateModel(10,10)
+#for i in range(0, 60):
+#    print("---- Time: " + str(i) + " ----")
+#    sr, rr = state.tick_time()
+#    print("State Report")
+#    print(sr)

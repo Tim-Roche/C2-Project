@@ -70,8 +70,8 @@ class Report:
             "Susceptible : " + str(self._susceptible) + '\n' + \
             "Recovered : " + str(self._recovered) + '\n' + \
             "Vaccinated : " + str(self._vaccinated) + '\n' + \
-            "Pfizer : " + str(self._pfizer) + '\n' + \
-            "Moderna : " + str(self._moderna) + '\n' + \
+            "Distributed Pfizer : " + str(self._pfizer) + '\n' + \
+            "Distributed Moderna : " + str(self._moderna) + '\n' + \
             "Available Pfizer : " + str(self._available_pfizer) + '\n' + \
             "Available Moderna : " + str(self._available_moderna) + '\n' + \
             "Beta : " + str(self._beta) + '\n' + \

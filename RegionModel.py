@@ -26,8 +26,8 @@ class RegionModel:
         self.dt = 1
         self.vaccine_pfizer_count = 0 #Phizers recieved on a weekly basis
         self.vaccine_moderna_count = 0 #Modernas recieved on a weekly basis
-        self.vaccine_distro_limit = 10 #Vaccines can be distro-ed in a week; Per Week
-        self.max_d_vac = self.vaccine_distro_limit/7 #min(self.vaccine_count, self.vaccine_limit)/7 
+        self.vaccine_distro_limit = N*0.01 #Vaccines can be distro-ed in a week; Per Week
+        self.max_d_vac = round(self.vaccine_distro_limit/7) #min(self.vaccine_count, self.vaccine_limit)/7 
         self.death_rate = {"normal": 0.018, "high":0.05}
         self.vac_q = []
 
@@ -72,9 +72,12 @@ class RegionModel:
             if((v.remainingVaccines() > 0) and (vacDailyLimit > 0)):
                 vmax = min(eligibleForVaccineToday, min(v.remainingVaccines(),vacDailyLimit))
                 vmax = max(vmax, 0)
+            
+
             v.vaccinate(vmax)
             v.addToQueue(vmax)
             vacDailyLimit -= vmax
+
             d_vacA += vmax
 
         #Daily Changes
@@ -97,13 +100,15 @@ class RegionModel:
         d_rec = self.gamma*self.infected[t - 1]
 
         self.vaccinated.append(self.vaccinated[t - 1] + d_vacB)
-        self.susceptible.append(self.susceptible[t-1] + d_sus - d_vacA)
+        self.susceptible.append(max(self.susceptible[t-1] + d_sus - d_vacA,0))
         self.infected.append(self.infected[t-1] + d_inf - d_dea)
         self.recovered.append(self.recovered[t-1] + d_rec)
         self.dead.append(self.dead[t-1] + d_dea)
         
         self.susHR.append(max(self.susHR[t - 1] - d_vacA - d_dead_highRisk, 0))
-        r = self.susHR[t]/self.susceptible[t]
+        r = 0
+        if(self.susceptible[t] > 0):
+            r = self.susHR[t]/self.susceptible[t]
         self.ratio.append(r)
 
         self.units += 1
