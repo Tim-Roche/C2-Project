@@ -1,5 +1,7 @@
 import pygame
 from pygame.locals import *
+from controlModel import controlModel
+import numpy as np
 
 # Define some colors
 BLACK = (0, 0, 0)
@@ -20,8 +22,8 @@ TITLE_PADDING = 30
 SIZE = 100
 
 #Game Settings
-yVal = 2
-xVal = 2
+columns = 10
+rows = 10
 speed = 0.5 #time between generations (in seconds)
 
 #Game Variables
@@ -31,33 +33,61 @@ start = 0
 
 #Pygame Initialization
 pygame.init()
-screen = pygame.display.set_mode((800, 750))
+screen = pygame.display.set_mode((1200, 1200))
 clock = pygame.time.Clock()
 pygame.display.set_caption("C2 Final Project")
+font = pygame.font.SysFont('Arial', 25)
 
 def gradient(percent):
-    percent = percent
-    green = percent*255
-    red = (1 - percent)*255
-    return((red, green, 0))
+    percent = round(percent,2)
+    percent = min(percent,1)
+    red = percent*255
+    green = (1 - percent)*255
+    return((int(red), int(green), 0))
+
+def convertToGrid(metric, r=0):
+    metric = [round(m,r) for m in metric]
+    output = np.reshape(metric, (columns,rows), order="F")
+    return(output)
+
+def convertToGradient(metric):
+    g = [gradient(m) for m in metric]
+    return(g) 
 
 def main():
+    c = controlModel(columns, rows)
+    notComplete = True
+
     done = False
     while not done:
+        if notComplete:
+            notComplete = c.tick_time()
+
+        reports = c.getCurrentRegionReports()
+        infected = c.getPercentageInfections(reports)
+        highRisk = c.getPercentageHighRisk(reports)
+        R0 = c.getR0(reports)
+
         #Events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 done = True
 
+        textData = convertToGrid(highRisk, r=2)
+        print(textData)
+        #print(textData)
         #Update Board
-        area = [[gradient(0.1), gradient(0.3)],[gradient(0.6), gradient(0.8)]]
-        for y in range(0,yVal):
-            for x in range(0,xVal):
-                value = area[y][x]
-                color = value
+        area = convertToGradient(highRisk)
+        for y in range(0,columns):
+            for x in range(0,rows):
+                color = area[x*y + y]
                 finalX = (x*(SIZE+X_PADDING))
                 finalY = (y*(SIZE+Y_PADDING)) + TITLE_PADDING
                 pygame.draw.rect(screen, color, pygame.Rect(finalX, finalY, SIZE, SIZE))
+
+                midX = (finalX + SIZE/2) 
+                midY = (finalY + SIZE/2) 
+                screen.blit(font.render(str(textData[y][x]), True, WHITE), (midX, midY))
 
         #Refresh
         pygame.display.flip()

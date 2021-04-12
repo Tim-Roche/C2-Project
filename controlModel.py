@@ -13,6 +13,7 @@ class controlModel():
         self.rows = rows
         self.columns = columns
         self.state = StateModel(self.rows,self.columns)
+        self.reports = None
 
     def PRR(self, values, names):
         normRank = []
@@ -37,8 +38,13 @@ class controlModel():
                     percentInfections = (infections)/(infections + susceptible)
                 allRegionInfections.append(percentInfections)
                 regionNames.append(report.get_region())
+        return(allRegionInfections)
+
+    def getPRRpercentInfections(self, reports):
+        allRegionInfections = self.getPercentageInfections(reports)
+        regionNames = [x for x in range(0, len(allRegionInfections))]
         PRR_percentInfections = self.PRR(allRegionInfections, regionNames)
-        return(PRR_percentInfections)
+        return(PRR_percentInfections)   
 
     def getPercentageHighRisk(self, reports):
         rs = []
@@ -48,6 +54,11 @@ class controlModel():
                 r = report.get_r()
                 rs.append(r)
                 regionNames.append(report.get_region())
+        return(rs)
+
+    def getPRRpercentageHighRisk(self, reports):
+        rs = self.getPercentageHighRisk(reports)
+        regionNames = [x for x in range(0, len(rs))]
         PRR_percentageHighRisk = self.PRR(rs, regionNames)
         return(PRR_percentageHighRisk)
 
@@ -61,6 +72,11 @@ class controlModel():
                 R0 = beta/gamma
                 R0s.append(R0)
                 regionNames.append(report.get_region())
+        return(R0s)
+
+    def getPRR_R0(self, reports):
+        R0s = self.getR0(reports)
+        regionNames = [x for x in range(0, len(R0s))]
         PRR_R0 = self.PRR(R0s, regionNames)
         return(PRR_R0)
 
@@ -71,9 +87,9 @@ class controlModel():
         return(output)
 
     def calculateDistroPlan(self, reports):
-        PRR_percentInfections = self.getPercentageInfections(reports)
-        PRR_percentageHighRisk = self.getPercentageHighRisk(reports)
-        PRR_R0 = self.getR0(reports)
+        PRR_percentInfections = self.getPRRpercentInfections(reports)
+        PRR_percentageHighRisk = self.getPRRpercentageHighRisk(reports)
+        PRR_R0 = self.getPRR_R0(reports)
         pointsPerRegion = list(np.add(PRR_percentInfections, PRR_percentageHighRisk))
         pointsPerRegion = np.add(pointsPerRegion, PRR_R0)
         masterPlan = self.normalizeAndReshape(pointsPerRegion)
@@ -102,34 +118,40 @@ class controlModel():
 
         return(pfizer_reserved_map, moderna_reserved_map, reservedPfizer, reservedModerna)
 
-    def run(self):
-        run = True
-        while run:
-            state_report, reports = self.state.tick_time()
+    def getCurrentRegionReports(self):
+        return(self.reports)
 
-            pfizer_reserved_map, moderna_reserved_map, reservedPfizer, reservedModerna = self.calculateReservedVaccines(reports)
-            self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer = reservedPfizer, maxModerna = reservedModerna)
-            masterDistroPlan = self.calculateDistroPlan(reports)
-            self.state.distribute_vaccines(masterDistroPlan, masterDistroPlan)
+    def tick_time(self, verbose=False):
+        notComplete = True
+        state_report, reports = self.state.tick_time()
+        self.reports = reports
+
+        pfizer_reserved_map, moderna_reserved_map, reservedPfizer, reservedModerna = self.calculateReservedVaccines(reports)
+        self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer = reservedPfizer, maxModerna = reservedModerna)
+        masterDistroPlan = self.calculateDistroPlan(reports)
+        self.state.distribute_vaccines(masterDistroPlan, masterDistroPlan)
+    
+
+        remaining = state_report.get_population() - (state_report.get_recovered() + state_report.get_vaccinated() + state_report.get_dead())
+        if(remaining <= 0):
+            notComplete = False
         
-
-            remaining = state_report.get_population() - (state_report.get_recovered() + state_report.get_vaccinated() + state_report.get_dead())
-            if(remaining <= 0):
-                run = False
-                
-            
+        if verbose:
             print("-----------")
             print(state_report)
             print()
             for rx in reports:
                 for ry in rx:
                     continue
-                    #print(ry)
-            #        if ((ry.get_pfizer() - int(ry.get_pfizer())) != 0):
-            #            run = False
-            print(state_report.get_population() - (state_report.get_recovered() + state_report.get_vaccinated() + state_report.get_dead()))
-            #time.sleep(0.1)
+                    print(ry)
+            print("Remaining: " + str(state_report.get_population() - (state_report.get_recovered() + state_report.get_vaccinated() + state_report.get_dead())))
+        return(notComplete)
 
+"""
 c = controlModel(2, 2)
-c.run()
+
+notComplete = True
+while notComplete:
+    notComplete = c.tick_time(verbose=True)
 print("Done!")
+"""
