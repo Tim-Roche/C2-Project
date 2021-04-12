@@ -16,6 +16,9 @@ class vaccine():
     def frontOfLine(self):
         return(float(self.vac_q[:1][0]))
 
+    def rollingSevenDaySum(self):
+        return(sum(self.vac_q[:7]))
+
     def pop(self, remaining=0):
         self.vac_q = self.vac_q[1:]
         self.vac_q[-1] += remaining

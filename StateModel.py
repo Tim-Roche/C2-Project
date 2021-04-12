@@ -58,9 +58,14 @@ class StateModel:
         self._pfizer += int((day/7)*1000)
         self._moderna += int((day/7)*1000)
 
-    def distribute_vaccines(self, pfizer_plan, moderna_plan):
-        prev_pfizer = self._pfizer
-        prev_moderna = self._moderna
+    def distribute_vaccines(self, pfizer_plan, moderna_plan, maxPfizer = -1, maxModerna = -1):
+        if(maxPfizer == -1):
+            maxPfizer = self._pfizer
+        if(maxModerna == -1):
+            maxModerna = self._moderna
+
+        prev_pfizer = min(maxPfizer, self._pfizer)
+        prev_moderna = min(maxModerna, self._moderna)
         for row in range(0, self._rows):
             for col in range(0, self._columns):
                 d_pfizer = min(round(pfizer_plan[row][col]*prev_pfizer), self._pfizer)

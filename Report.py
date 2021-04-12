@@ -1,7 +1,7 @@
 class Report:
 
     def __init__(self, region, population, infected, dead, susceptible, recovered, vaccinated,
-                 pfizer, moderna, beta, day):
+                 pfizer, moderna, beta, r, gamma, rollingSevenDays_P, rollingSevenDays_M, day):
         self._region = region
         self._population = population
         self._infected = infected
@@ -15,6 +15,22 @@ class Report:
         self._day = day
         self._available_pfizer = 0
         self._available_moderna = 0
+        self._rollingSevenDays_P = rollingSevenDays_P
+        self._rollingSevenDays_M = rollingSevenDays_M
+        self._r = r
+        self._gamma = gamma
+
+    def get_rollingSevenDays_P(self):
+        return self._rollingSevenDays_P 
+
+    def get_rollingSevenDays_M(self):
+        return self._rollingSevenDays_M 
+
+    def get_gamma(self):
+        return self._gamma
+
+    def get_r(self):
+        return self._r
 
     def get_region(self):
         return self._region
@@ -72,6 +88,8 @@ class Report:
             "Vaccinated : " + str(self._vaccinated) + '\n' + \
             "Distributed Pfizer : " + str(self._pfizer) + '\n' + \
             "Distributed Moderna : " + str(self._moderna) + '\n' + \
+            "RSD Pfizer: " + str(self._rollingSevenDays_P) + '\n' + \
+            "RSD Moderna: " + str(self._rollingSevenDays_M) + '\n' + \
             "Available Pfizer : " + str(self._available_pfizer) + '\n' + \
             "Available Moderna : " + str(self._available_moderna) + '\n' + \
             "Beta : " + str(self._beta) + '\n' + \
@@ -90,5 +108,11 @@ class Report:
                       self._vaccinated + other.get_vaccinated(),
                       self._pfizer + other.get_pfizer(),
                       self._moderna + other.get_moderna(),
+                      
                       (self._beta + other.get_beta())/2,
+                      (self._r + other.get_r())/2,
+                      (self._gamma + other.get_gamma())/2,
+                      self._rollingSevenDays_P + other.get_rollingSevenDays_P(),
+                      self._rollingSevenDays_M + other.get_rollingSevenDays_M(),
                       self._day)
+                      

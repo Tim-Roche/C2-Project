@@ -115,6 +115,12 @@ class RegionModel:
 
         populationCheck = self.susceptible[-1] + self.infected[-1] + self.recovered[-1] + self.dead[-1] + self.vaccinated[-1] + sum(self.vacTypes['pfizer'].vac_q) + sum(self.vacTypes['moderna'].vac_q)
         #print(round(populationCheck))
+
+        rolling7_P = self.vacTypes['pfizer'].rollingSevenDaySum()
+        rolling7_M = self.vacTypes['moderna'].rollingSevenDaySum()
+
+        
+
         report = Report(self.name, self.N, round(self.infected[t]), round(self.dead[t]), round(self.susceptible[t]), round(self.recovered[t]), round(self.vaccinated[t]),
-                        self.vacTypes['pfizer'].vaccineCount, self.vacTypes['moderna'].vaccineCount, self.beta, t)
+                        self.vacTypes['pfizer'].vaccineCount, self.vacTypes['moderna'].vaccineCount, self.beta, r, self.gamma, math.ceil(rolling7_P), math.ceil(rolling7_M), t)
         return report
