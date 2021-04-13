@@ -15,6 +15,17 @@ class controlModel():
         self.state = StateModel(self.rows,self.columns)
         self.reports = None
 
+    def getPercentVaccinated(self, reports):
+        allRegionVaccinations = []
+        for cr in reports:
+            for report in cr:
+                vaccinations = report.get_vaccinated()
+                population = report.get_population()
+                dead = report.get_dead()
+                recovered = report.get_recovered()
+                allRegionVaccinations.append(vaccinations/(population - dead - recovered))
+        return(allRegionVaccinations)    
+
     def PRR(self, values, names):
         normRank = []
         numOfRegions = len(names)
@@ -33,9 +44,10 @@ class controlModel():
             for report in cr:
                 infections = report.get_infected()
                 susceptible = report.get_susceptible()
+                population = report.get_population()
                 percentInfections = 0
                 if(infections+susceptible != 0):
-                    percentInfections = (infections)/(infections + susceptible)
+                    percentInfections = (infections)/(population)
                 allRegionInfections.append(percentInfections)
                 regionNames.append(report.get_region())
         return(allRegionInfections)
@@ -147,6 +159,8 @@ class controlModel():
             print("Remaining: " + str(state_report.get_population() - (state_report.get_recovered() + state_report.get_vaccinated() + state_report.get_dead())))
         return(notComplete)
 
+    def getDay(self):
+        return(self.state.get_day())
 """
 c = controlModel(2, 2)
 

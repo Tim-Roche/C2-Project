@@ -11,6 +11,7 @@ class StateModel:
         self._pfizer = 1000
         self._moderna = 1000
         self._init_regions()
+        self._day = -1
 
     def _init_regions(self):
         region_num = 0
@@ -35,7 +36,7 @@ class StateModel:
                 row_reports.append(self._regions[row][col].tick_time())
             reports.append(row_reports)
         state_report = self.get_state_report(reports)
-
+        self._day = state_report.get_day()
         if state_report.get_day() % 7 == 0:
             self._get_vaccines(state_report.get_day())
 
@@ -43,6 +44,9 @@ class StateModel:
         state_report.set_available_moderna(self._moderna)
 
         return state_report, reports
+
+    def get_day(self):
+        return(self._day)
 
     def get_state_report(self, reports):
         state_report = None
