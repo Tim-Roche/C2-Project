@@ -2,18 +2,6 @@ import pygame
 from pygame.locals import *
 from controlModel import controlModel
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-
-pygame.init()
-screen = pygame.display.set_mode((1200, 1200))
-clock = pygame.time.Clock()
-pygame.display.set_caption("C2 Final Project")
-font = pygame.font.SysFont('Arial', 25)
-
-
-#fig = plt.figure()
-FRAMES_SECOND = 60
 
 # Define some colors
 BLACK = (0, 0, 0)
@@ -43,12 +31,12 @@ currentGen = 0
 count = 0
 start = 0
 
-
-
-c = controlModel(columns, rows)
-s = c.state
-
-#ax1 = fig.add_subplot(1,1,1)
+#Pygame Initialization
+pygame.init()
+screen = pygame.display.set_mode((1200, 1200))
+clock = pygame.time.Clock()
+pygame.display.set_caption("C2 Final Project")
+font = pygame.font.SysFont('Arial', 25)
 
 def gradient(percent):
     percent = round(percent,2)
@@ -75,27 +63,11 @@ def convertToGradient(metric, color="normal"):
         g = [gradientBlue(m) for m in metric]
     return(g) 
 
-
-def animate(i):
-    c.tick_time()
-    m = s.get_region(2,2)
-    ax1.clear()
-    ax1.plot(m.time, m.infected, label='Infected')
-    ax1.plot(m.time, m.susceptible, label='Susceptible')
-    ax1.plot(m.time, m.recovered, label='Recovered')
-    ax1.plot(m.time, m.dead, label='Dead')
-    ax1.plot(m.time, m.vaccinated, label='Fully Vaccinated')
-    ax1.plot(m.time, m.susHR, label='High Risk Population')
-    ax1.title.set_text("Region 1")
-    ax1.legend()
-
-
 def main():
+    c = controlModel(columns, rows)
     notComplete = True
-    debug = False
+
     done = False
-
-
     while not done:
         if notComplete:
             notComplete = c.tick_time()
@@ -106,12 +78,34 @@ def main():
         vaccinated = c.getPercentVaccinated(reports)
         R0 = c.getR0(reports)
 
+        #Events
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                done = True
 
+        textData = convertToGrid(vaccinated, r=2)
+        print(textData)
+        #print(textData)
+        #Update Board
+        area = convertToGradient(vaccinated, color="blue")
+        screen.fill(WHITE)
+        for y in range(0,columns):
+            for x in range(0,rows):
+                print(columns*y + x)
+                color = area[columns*y + x]
+                finalX = (x*(SIZE+X_PADDING))
+                finalY = (y*(SIZE+Y_PADDING)) + TITLE_PADDING
+                pygame.draw.rect(screen, color, pygame.Rect(finalX, finalY, SIZE, SIZE))
 
+                midX = (finalX + SIZE/2) 
+                midY = (finalY + SIZE/2) 
+                screen.blit(font.render(str(textData[y][x]), True, WHITE), (midX, midY))
 
-ani = animation.FuncAnimation(fig, animate, interval=FRAMES_SECOND)
-plt.show()
+        #Refresh
+        pygame.display.flip()
+        clock.tick(60)
+
+    pygame.quit()
+
 main()
-
-
 

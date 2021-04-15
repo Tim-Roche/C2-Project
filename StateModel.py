@@ -15,10 +15,22 @@ class StateModel:
 
     def _init_regions(self):
         region_num = 0
+        area = self._rows*self._columns
+        smallRegions = int(area*0.2)
+        isSmallRegions = [int(i<smallRegions) for i in range(0,area)]
+
         for row in range(0, self._rows):
             row_array = []
             for col in range(0, self._columns):
-                row_array.append(RegionModel(name=region_num, N=random.randint(500, 5000)))
+                index = col*self._rows + row
+                regionSize = 1
+                if(isSmallRegions[index]):
+                    regionSize = 150000
+                    row_array.append(RegionModel(name=region_num, N=regionSize, isSmallRegion=True)) #random.randint(500, 5000))
+                else:    
+                    regionSize = 500000
+                    row_array.append(RegionModel(name=region_num, N=regionSize)) #random.randint(500, 5000))
+                    
                 region_num += 1
             self._regions.append(row_array)
 

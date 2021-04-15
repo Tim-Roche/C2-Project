@@ -14,6 +14,7 @@ class controlModel():
         self.columns = columns
         self.state = StateModel(self.rows,self.columns)
         self.reports = None
+        self.stateReports = None
 
     def getPercentVaccinated(self, reports):
         allRegionVaccinations = []
@@ -93,8 +94,7 @@ class controlModel():
         return(PRR_R0)
 
     def normalizeAndReshape(self, array):
-        norm = np.linalg.norm(array)
-        normal_array = list(array/norm)
+        normal_array = [element/sum(array) for element in array]
         output = np.reshape(normal_array, (self.columns,self.rows), order="F")
         return(output)
 
@@ -133,14 +133,38 @@ class controlModel():
     def getCurrentRegionReports(self):
         return(self.reports)
 
+    def getCurrentStateReport(self):
+        return(self.stateReports)
+
+
     def tick_time(self, verbose=False):
         notComplete = True
         state_report, reports = self.state.tick_time()
         self.reports = reports
+        self.stateReports = state_report
+
+        regionSizes = []
+        for rx in reports:
+            for ry in rx:
+                regionSizes.append(int(ry.get_isSmallRegions()))
+        regionSizes = np.reshape(regionSizes, (self.columns,self.rows), order="F")
+
 
         pfizer_reserved_map, moderna_reserved_map, reservedPfizer, reservedModerna = self.calculateReservedVaccines(reports)
+
+
         self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer = reservedPfizer, maxModerna = reservedModerna)
         masterDistroPlan = self.calculateDistroPlan(reports)
+
+
+        smallRegionsOnly = np.multiply(masterDistroPlan, regionSizes)
+        totalSmallVaccines = sum(list(np.array(smallRegionsOnly)*self.stateReports.get_available_moderna()))
+        
+
+        #totalVaccines = get_available_pfizer() + get_available_moderna()
+        #absoluteDistro = [i*totalVaccines for i in masterDistroPlan]
+
+        #print(masterDistroPlan)
         self.state.distribute_vaccines(masterDistroPlan, masterDistroPlan)
     
 
@@ -154,7 +178,6 @@ class controlModel():
             print()
             for rx in reports:
                 for ry in rx:
-                    continue
                     print(ry)
             print("Remaining: " + str(state_report.get_population() - (state_report.get_recovered() + state_report.get_vaccinated() + state_report.get_dead())))
         return(notComplete)

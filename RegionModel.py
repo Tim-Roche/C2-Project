@@ -4,7 +4,7 @@ from Report import Report
 from vaccine import vaccine
 
 class RegionModel:
-    def __init__(self, name=0, N=1000, HRR=0.25, I0=1, R0=0, beta=0.2, gamma=1./10):
+    def __init__(self, isSmallRegion=False, name=0, N=1000, HRR=0.25, I0=1, R0=0, beta=0.2, gamma=1./10):
         self.name = name
         # Total population, N.
         self.N = N
@@ -30,6 +30,7 @@ class RegionModel:
         self.max_d_vac = round(self.vaccine_distro_limit/7) #min(self.vaccine_count, self.vaccine_limit)/7 
         self.death_rate = {"normal": 0.018, "high":0.05}
         self.vac_q = []
+        self.isSmallRegion = isSmallRegion
 
         pfizer = vaccine("pfizer")
         moderna = vaccine("moderna")
@@ -105,7 +106,7 @@ class RegionModel:
         self.recovered.append(self.recovered[t-1] + d_rec)
         self.dead.append(self.dead[t-1] + d_dea)
         
-        self.susHR.append(max(self.susHR[t - 1] - d_vacA - d_dead_highRisk, 0))
+        self.susHR.append(max(self.susHR[t - 1] - d_vacA - d_dead_highRisk - d_inf*self.ratio[t-1], 0))
         r = 0
         if(self.susceptible[t] > 0):
             r = self.susHR[t]/self.susceptible[t]
@@ -122,5 +123,5 @@ class RegionModel:
         
 
         report = Report(self.name, self.N, round(self.infected[t]), round(self.dead[t]), round(self.susceptible[t]), round(self.recovered[t]), round(self.vaccinated[t]),
-                        self.vacTypes['pfizer'].vaccineCount, self.vacTypes['moderna'].vaccineCount, self.beta, r, self.gamma, math.ceil(rolling7_P), math.ceil(rolling7_M), t)
+                        self.vacTypes['pfizer'].vaccineCount, self.vacTypes['moderna'].vaccineCount, self.beta, r, self.gamma, math.ceil(rolling7_P), math.ceil(rolling7_M), self.isSmallRegion, t)
         return report
