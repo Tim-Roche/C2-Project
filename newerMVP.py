@@ -36,6 +36,11 @@ start = 0
 fig = plt.figure()
 ax1 = fig.add_subplot(1,1,1)
 
+fig2 = plt.figure()
+bx1 = fig.add_subplot(1,1,1)
+bx1.plot([1, 2, 3], [4,5,6], label='Susceptible')
+plt.show()
+
 FRAMES_SECOND = 60
 c = controlModel(columns, rows)
 s = c.state

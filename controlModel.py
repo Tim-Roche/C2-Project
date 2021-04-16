@@ -16,7 +16,7 @@ class controlModel():
         self.reports = None
         self.stateReports = None
 
-    def getPercentVaccinated(self, reports):
+    def getPercentVaccinated(self, reports, mul100=False):
         allRegionVaccinations = []
         for cr in reports:
             for report in cr:
@@ -24,7 +24,12 @@ class controlModel():
                 population = report.get_population()
                 dead = report.get_dead()
                 recovered = report.get_recovered()
-                allRegionVaccinations.append(vaccinations/(population - dead - recovered))
+                PV = vaccinations/(population - dead - recovered)
+                PV = min(1, PV)
+                if(mul100):
+                    PV = PV*100
+                    PV = int(PV)
+                allRegionVaccinations.append(PV)
         return(allRegionVaccinations)    
 
     def PRR(self, values, names):
@@ -38,7 +43,7 @@ class controlModel():
         names, PRRlist = zip(*sorted(zip(names,PRRlist)))
         return(PRRlist)
 
-    def getPercentageInfections(self, reports):
+    def getPercentageInfections(self, reports, mul100=False):
         allRegionInfections = []
         regionNames = []
         for cr in reports:
@@ -49,6 +54,9 @@ class controlModel():
                 percentInfections = 0
                 if(infections+susceptible != 0):
                     percentInfections = (infections)/(population)
+                if(mul100 == True):
+                    percentInfections = int(percentInfections*100)
+                    
                 allRegionInfections.append(percentInfections)
                 regionNames.append(report.get_region())
         return(allRegionInfections)
@@ -59,12 +67,14 @@ class controlModel():
         PRR_percentInfections = self.PRR(allRegionInfections, regionNames)
         return(PRR_percentInfections)   
 
-    def getPercentageHighRisk(self, reports):
+    def getPercentageHighRisk(self, reports, mul100=False):
         rs = []
         regionNames = []
         for cr in reports:
             for report in cr:
                 r = report.get_r()
+                if(mul100==True):
+                    r = int(r*100)
                 rs.append(r)
                 regionNames.append(report.get_region())
         return(rs)
