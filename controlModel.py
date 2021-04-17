@@ -15,6 +15,7 @@ class controlModel():
         self.state = StateModel(self.rows,self.columns)
         self.reports = None
         self.stateReports = None
+        self.pointsPerRegion = None
 
     def getPercentVaccinated(self, reports, mul100=False):
         allRegionVaccinations = []
@@ -32,13 +33,20 @@ class controlModel():
                 allRegionVaccinations.append(PV)
         return(allRegionVaccinations)    
 
+    def scale(self, values, weight=1):
+        if(sum(values) > 0):
+            print(sum(values))
+            return([(weight*value)/sum(values) for value in values])  
+        else:
+            return([0 for value in values])
+
     def PRR(self, values, names):
         normRank = []
         numOfRegions = len(names)
         values, names = zip(*sorted(zip(values,names), reverse=True))
         PRRlist = []
         for rank in range(1,len(values)+1):
-            percentageRegionRank = 1.1-rank/numOfRegions
+            percentageRegionRank = 1-rank/numOfRegions
             PRRlist.append(percentageRegionRank)
         names, PRRlist = zip(*sorted(zip(names,PRRlist)))
         return(PRRlist)
@@ -51,9 +59,15 @@ class controlModel():
                 infections = report.get_infected()
                 susceptible = report.get_susceptible()
                 population = report.get_population()
+                dead = report.get_dead()
+                vaccinated = report.get_vaccinated()
+                recovered = report.get_recovered()
                 percentInfections = 0
-                if(infections+susceptible != 0):
-                    percentInfections = (infections)/(population)
+                total = population - dead - vaccinated - recovered
+                if(round(total) > 0):
+                    percentInfections = (round(infections))/(round(total))
+                else:
+                    percentInfections = 0
                 if(mul100 == True):
                     percentInfections = int(percentInfections*100)
                     
@@ -104,16 +118,27 @@ class controlModel():
         return(PRR_R0)
 
     def normalizeAndReshape(self, array):
-        normal_array = [element/sum(array) for element in array]
+        print(array)
+        if(sum(array) > 0):
+            normal_array = [element/sum(array) for element in array]
+        else:
+            normal_array = [0 for element in array]
         output = np.reshape(normal_array, (self.columns,self.rows), order="F")
         return(output)
 
+    def roundList(self, l):
+        return([round(i,2) for i in l])
+
     def calculateDistroPlan(self, reports):
-        PRR_percentInfections = self.getPRRpercentInfections(reports)
-        PRR_percentageHighRisk = self.getPRRpercentageHighRisk(reports)
-        PRR_R0 = self.getPRR_R0(reports)
+        PRR_percentInfections = self.scale(self.getPercentageInfections(reports)) #self.getPRRpercentInfections(reports)
+        PRR_percentageHighRisk = self.scale(self.getPercentageHighRisk(reports)) #self.getPRRpercentageHighRisk(reports)
+        PRR_R0 = self.scale(self.getR0(reports)) #self.getPRR_R0(reports)
+        print(self.roundList(list(PRR_percentInfections[0:3])))
+        print(self.roundList(list(PRR_percentageHighRisk[0:3])))
+        print(self.roundList(list(PRR_R0[0:3])))
+        print()
         pointsPerRegion = list(np.add(PRR_percentInfections, PRR_percentageHighRisk))
-        pointsPerRegion = np.add(pointsPerRegion, PRR_R0)
+        self.pointsPerRegion = np.add(pointsPerRegion, PRR_R0)
         masterPlan = self.normalizeAndReshape(pointsPerRegion)
         return masterPlan
 
@@ -146,6 +171,8 @@ class controlModel():
     def getCurrentStateReport(self):
         return(self.stateReports)
 
+    def getPointsPerRegion(self):
+        return([round(r,2) for r in self.pointsPerRegion])
 
     def tick_time(self, verbose=False):
         notComplete = True

@@ -38,9 +38,11 @@ statePlot = fig.add_subplot(111)
 stateCanvas = agg.FigureCanvasAgg(fig)
 
 fig2 = plt.figure(figsize=[10, 5])
-pvMap = fig2.add_subplot(1,3,1)
-infMap = fig2.add_subplot(1,3,2)
-hrMap = fig2.add_subplot(1,3,3)
+pvMap = fig2.add_subplot(1,3,2)
+pprMap = fig2.add_subplot(1,3,1)
+infMap = fig2.add_subplot(1,3,3)
+#hrMap = fig2.add_subplot(1,3,3)
+
 #R0Map = fig2.add_subplot(1,4,4)
 
 heatCanvas = agg.FigureCanvasAgg(fig2)
@@ -138,12 +140,21 @@ def plotStateOverview(reports, stateReport):
 def plotRegionStats(reports, stateReport):
     pvMap.clear()
     infMap.clear()
-    hrMap.clear()
+    pprMap.clear()
 
     pv = c.getPercentVaccinated(reports,mul100=True)
     inf = c.getPercentageInfections(reports,mul100=True)
     hr = c.getPercentageHighRisk(reports,mul100=True)
     #R0 = c.getR0(reports)
+
+
+    #hr = c.getPercentageHighRisk(reports,mul100=True)
+    ppr = c.getPointsPerRegion()
+    ppr = numpy.reshape(ppr, (columns,rows), order="F")
+    pprMap.set_title("Regional Cost Function")
+    pprMap.axis('off')
+    im3 = pprMap.imshow(ppr, cmap='OrRd', interpolation='nearest', vmin=0, vmax=1)
+    texts = annotate_heatmap(im3,valfmt="{x}",threshold=0.7)
 
     pv = numpy.reshape(pv, (columns,rows), order="F")
     pvMap.set_title("Percent Vaccinated")
@@ -157,12 +168,6 @@ def plotRegionStats(reports, stateReport):
     im2 = infMap.imshow(inf, cmap='OrRd', interpolation='nearest', vmin=0, vmax=100)
     texts = annotate_heatmap(im2,threshold=70,valfmt="{x}%")
 
-    hr = c.getPercentageHighRisk(reports,mul100=True)
-    hr = numpy.reshape(hr, (columns,rows), order="F")
-    hrMap.set_title("Percent High Risk")
-    hrMap.axis('off')
-    im3 = hrMap.imshow(inf, cmap='OrRd', interpolation='nearest', vmin=0, vmax=100)
-    texts = annotate_heatmap(im3,threshold=70,valfmt="{x}%")
 
     #R0 = c.getR0(reports)
     #R0= numpy.reshape(R0, (columns,rows), order="F")
