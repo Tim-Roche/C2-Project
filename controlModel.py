@@ -16,6 +16,7 @@ class controlModel():
         self.reports = None
         self.stateReports = None
         self.pointsPerRegion = None
+        self.toggle = False
 
     def getPercentVaccinated(self, reports, mul100=False):
         allRegionVaccinations = []
@@ -35,19 +36,19 @@ class controlModel():
 
     def scale(self, values, weight=1):
         if(sum(values) > 0):
-            print(sum(values))
             return([(weight*value)/sum(values) for value in values])  
         else:
             return([0 for value in values])
 
-    def PRR(self, values, names):
+    def PRR(self, values, weight=1):
         normRank = []
+        names = [i for i in range(0, len(values))]
         numOfRegions = len(names)
         values, names = zip(*sorted(zip(values,names), reverse=True))
         PRRlist = []
         for rank in range(1,len(values)+1):
             percentageRegionRank = 1-rank/numOfRegions
-            PRRlist.append(percentageRegionRank)
+            PRRlist.append(weight*percentageRegionRank)
         names, PRRlist = zip(*sorted(zip(names,PRRlist)))
         return(PRRlist)
 
@@ -81,6 +82,15 @@ class controlModel():
         PRR_percentInfections = self.PRR(allRegionInfections, regionNames)
         return(PRR_percentInfections)   
 
+    def getInfectionRate(self,reports):
+        allInfectionRates = []
+        for cr in reports:
+            for report in cr:
+                irate = report.get_d_inf()
+                irate = max(irate,0)
+                allInfectionRates.append(irate)
+        return(allInfectionRates)       
+
     def getPercentageHighRisk(self, reports, mul100=False):
         rs = []
         regionNames = []
@@ -92,6 +102,14 @@ class controlModel():
                 rs.append(r)
                 regionNames.append(report.get_region())
         return(rs)
+    
+    def getSusceptible(self, reports):
+        allRPop = []
+        for cr in reports:
+            for report in cr:
+                sus = report.get_susceptible()
+                allRPop.append(sus)
+        return(allRPop)      
 
     def getPRRpercentageHighRisk(self, reports):
         rs = self.getPercentageHighRisk(reports)
@@ -118,8 +136,10 @@ class controlModel():
         return(PRR_R0)
 
     def normalizeAndReshape(self, array):
-        print(array)
+        #print(sum(array))
+        #print(array)
         if(sum(array) > 0):
+            #print(sum(array))
             normal_array = [element/sum(array) for element in array]
         else:
             normal_array = [0 for element in array]
@@ -129,17 +149,23 @@ class controlModel():
     def roundList(self, l):
         return([round(i,2) for i in l])
 
-    def calculateDistroPlan(self, reports):
-        PRR_percentInfections = self.scale(self.getPercentageInfections(reports)) #self.getPRRpercentInfections(reports)
-        PRR_percentageHighRisk = self.scale(self.getPercentageHighRisk(reports)) #self.getPRRpercentageHighRisk(reports)
-        PRR_R0 = self.scale(self.getR0(reports)) #self.getPRR_R0(reports)
-        print(self.roundList(list(PRR_percentInfections[0:3])))
-        print(self.roundList(list(PRR_percentageHighRisk[0:3])))
-        print(self.roundList(list(PRR_R0[0:3])))
-        print()
-        pointsPerRegion = list(np.add(PRR_percentInfections, PRR_percentageHighRisk))
-        self.pointsPerRegion = np.add(pointsPerRegion, PRR_R0)
-        masterPlan = self.normalizeAndReshape(pointsPerRegion)
+    def calculateDistroPlan(self, reports,force=None):
+        normInfRate = self.scale(self.getInfectionRate(reports),100) #self.getPRRpercentInfections(reports)
+        #print(normInfRate)
+        normHR = self.scale(self.getPercentageHighRisk(reports),1) #self.getPRRpercentageHighRisk(reports)
+        normSus = self.scale(self.getSusceptible(reports),50) #self.getPRR_R0(reports)
+        normPIN =  self.scale(self.getPercentageInfections(reports),1)
+        #print(self.roundList(list(normInfRate[0:3])))
+        #print(self.roundList(list(normHR[0:3])))
+        #print(self.roundList(list(normSus[0:3])))
+        #print()
+        self.pointsPerRegion = list(np.add(normInfRate, normHR))
+        self.pointsPerRegion = np.add(self.pointsPerRegion, normSus)
+        self.pointsPerRegion = np.add(self.pointsPerRegion, normPIN)
+        if(force != None):
+            self.pointsPerRegion = force
+        masterPlan = self.normalizeAndReshape(self.pointsPerRegion)
+        #print(masterPlan)
         return masterPlan
 
     def calculateReservedVaccines(self, reports):
@@ -180,6 +206,15 @@ class controlModel():
         self.reports = reports
         self.stateReports = state_report
 
+        if(state_report.get_infected() < 50000):
+            if(self.toggle):
+                print(state_report.get_infected(), state_report.get_day())
+                print("Dead: ", state_report.get_dead())
+                print("Vaccinated: ", state_report.get_vaccinated())
+                self.toggle = False
+        else:
+            self.toggle = True
+
         regionSizes = []
         for rx in reports:
             for ry in rx:
@@ -191,7 +226,7 @@ class controlModel():
 
 
         self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer = reservedPfizer, maxModerna = reservedModerna)
-        masterDistroPlan = self.calculateDistroPlan(reports)
+        masterDistroPlan = self.calculateDistroPlan(reports) #,force=[0,0,0,0,0,0,0,0,0]
 
 
         smallRegionsOnly = np.multiply(masterDistroPlan, regionSizes)

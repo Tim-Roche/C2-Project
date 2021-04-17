@@ -8,8 +8,8 @@ class StateModel:
         self._rows = N
         self._columns = M
         self._regions = []
-        self._pfizer = 1000
-        self._moderna = 1000
+        self._pfizer = 100000
+        self._moderna = 100000
         self._init_regions()
         self._day = -1
 
@@ -24,9 +24,11 @@ class StateModel:
             for col in range(0, self._columns):
                 index = col*self._rows + row
                 regionSize = 1
+                #beta = random.randint(10,25)/100
+                #HRR = random.randint(10,60)/100
                 if(isSmallRegions[index]):
                     regionSize = 150000
-                    row_array.append(RegionModel(name=region_num, N=regionSize, isSmallRegion=True)) #random.randint(500, 5000))
+                    row_array.append(RegionModel(name=region_num, N=regionSize, beta=0.2,isSmallRegion=True)) #random.randint(500, 5000))
                 else:    
                     regionSize = 500000
                     row_array.append(RegionModel(name=region_num, N=regionSize)) #random.randint(500, 5000))
@@ -71,8 +73,8 @@ class StateModel:
         return state_report
 
     def _get_vaccines(self, day):
-        self._pfizer += int((day/7)*1000)
-        self._moderna += int((day/7)*1000)
+        self._pfizer += int((day/7)*100000)
+        self._moderna += int((day/7)*100000)
 
     def distribute_vaccines(self, pfizer_plan, moderna_plan, maxPfizer = -1, maxModerna = -1):
         if(maxPfizer == -1):
