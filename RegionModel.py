@@ -2,9 +2,11 @@ import math
 import numpy as np
 from Report import Report
 from vaccine import vaccine
+import math
+import random
 
 class RegionModel:
-    def __init__(self, isSmallRegion=False, name=0, N=1000, HRR=0.25, I0=1, R0=0, beta=0.2, gamma=1./10):
+    def __init__(self, isSmallRegion=False, name=0, seed = 123456, noise=False, N=1000, HRR=0.25, I0=1, R0=0, beta=0.2, gamma=1./20):
         self.name = name
         # Total population, N.
         self.N = N
@@ -14,13 +16,16 @@ class RegionModel:
         # Everyone else, S0, is susceptible to infection initially.
         self.S0 = self.N - self.I0 - self.R0
         # Contact rate, beta, and mean recovery rate, gamma, (in 1/days).
-        self.beta, self.gamma = beta, gamma
+        self.seed = seed + name
+        self.beta,  self.gamma = beta, gamma
         self.susceptible = [self.S0]
+        self.susceptibleNoVax = [self.S0]
         self.infected = [self.I0]
         self.ratio = [HRR]
         self.recovered = [self.R0]
         self.vaccinated = [0]
         self.dead = [0]
+        self.noise = noise
         self.time = [0]
         self.units = 1
         self.dt = 1
@@ -31,12 +36,16 @@ class RegionModel:
         self.death_rate = {"normal": 0.018, "high":0.05}
         self.vac_q = []
         self.isSmallRegion = isSmallRegion
+        self.totalSingleVac = 0
 
         pfizer = vaccine("pfizer")
         moderna = vaccine("moderna")
         self.vacTypes = {"pfizer": pfizer, "moderna":moderna}
         
+
     def tick_time(self):
+        np.random.seed(self.seed*2 + self.units)
+
         t = self.units*self.dt
         self.time.append(t)
         self.vacTypes['pfizer'].addVaccines(self.vaccine_pfizer_count)
@@ -97,14 +106,26 @@ class RegionModel:
 
         d_sus = -1*(self.beta*self.susceptible[t - 1]*self.infected[t - 1])/self.N
         d_sus = min(d_sus - d_vacA,0)
-        d_inf = -1*d_sus - self.gamma*self.infected[t - 1]
+        d_inf = -1*(d_sus) - self.gamma*self.infected[t - 1]
         d_rec = self.gamma*self.infected[t - 1]
+
+        if True: #self.noise:
+            
+            mu, sigma = d_inf, math.sqrt(self.gamma*self.infected[t - 1]) # mean and standard deviation
+            d_inf = np.random.normal(mu, sigma)
+            
+            mu, sigma = d_sus, math.sqrt((self.beta*self.susceptible[t - 1]*self.infected[t - 1])/self.N) # mean and standard deviation
+            d_sus = np.random.normal(mu, sigma)
+        
+            mu, sigma = d_rec, math.sqrt(self.gamma*self.infected[t - 1]) # mean and standard deviation
+            d_rec = np.random.normal(mu, sigma)
 
         self.vaccinated.append(self.vaccinated[t - 1] + d_vacB)
         self.susceptible.append(max(self.susceptible[t-1] + d_sus - d_vacA,0))
-        self.infected.append(self.infected[t-1] + d_inf - d_dea)
+        self.infected.append(max(min(self.infected[t-1] + d_inf - d_dea, self.N),0))
         self.recovered.append(self.recovered[t-1] + d_rec)
-        self.dead.append(self.dead[t-1] + d_dea)
+        self.dead.append(self.dead[t-1] + max(d_dea,0))
+        
         
         self.susHR.append(max(self.susHR[t - 1] - d_vacA - d_dead_highRisk - d_inf*self.ratio[t-1], 0))
         r = 0
@@ -114,14 +135,12 @@ class RegionModel:
 
         self.units += 1
 
-        populationCheck = self.susceptible[-1] + self.infected[-1] + self.recovered[-1] + self.dead[-1] + self.vaccinated[-1] + sum(self.vacTypes['pfizer'].vac_q) + sum(self.vacTypes['moderna'].vac_q)
-        #print(round(populationCheck))
-
         rolling7_P = self.vacTypes['pfizer'].rollingSevenDaySum()
         rolling7_M = self.vacTypes['moderna'].rollingSevenDaySum()
 
         
 
         report = Report(self.name, self.N, round(self.infected[t]), round(self.dead[t]), round(self.susceptible[t]), round(self.recovered[t]), round(self.vaccinated[t]),
-                        self.vacTypes['pfizer'].vaccineCount, self.vacTypes['moderna'].vaccineCount, self.beta, r, self.gamma, math.ceil(rolling7_P), math.ceil(rolling7_M), self.isSmallRegion, self.vaccine_distro_limit, t)
+                        self.vacTypes['pfizer'].vaccineCount, self.vacTypes['moderna'].vaccineCount, self.beta, r, self.gamma, math.ceil(rolling7_P), math.ceil(rolling7_M), self.isSmallRegion, self.vaccine_distro_limit, d_inf, t)
+
         return report

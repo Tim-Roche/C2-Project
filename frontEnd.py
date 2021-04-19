@@ -95,7 +95,6 @@ def main():
     debug = False
     done = False
 
-
     while not done:
         if notComplete:
             notComplete = c.tick_time()

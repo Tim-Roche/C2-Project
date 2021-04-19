@@ -1,11 +1,12 @@
 class Report:
 
     def __init__(self, region, population, infected, dead, susceptible, recovered, vaccinated,
-                 pfizer, moderna, beta, r, gamma, rollingSevenDays_P, rollingSevenDays_M, isSmallRegion, distroLimit, day):
+                 pfizer, moderna, beta, r, gamma, rollingSevenDays_P, rollingSevenDays_M, isSmallRegion, distroLimit,d_inf, day):
         self._region = region
         self._population = population
         self._infected = infected
         self._dead = dead
+        self._d_inf = d_inf
         self._susceptible = susceptible
         self._recovered = recovered
         self._vaccinated = vaccinated
@@ -27,6 +28,9 @@ class Report:
 
     def get_isSmallRegions(self):
         return self._isSmallRegion
+
+    def get_d_inf(self):
+        return self._d_inf
 
     def get_rollingSevenDays_P(self):
         return self._rollingSevenDays_P 
@@ -125,5 +129,6 @@ class Report:
                       self._rollingSevenDays_M + other.get_rollingSevenDays_M(),
                       False,
                       (self._distroLimit + other.get_distroLimit()) / 2,
+                      False,
                       self._day)
                       
