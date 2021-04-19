@@ -8,8 +8,8 @@ class StateModel:
         self._rows = N
         self._columns = M
         self._regions = []
-        self._pfizer = 100000
-        self._moderna = 100000
+        self._pfizer = 0
+        self._moderna = 0
         self._init_regions()
         self._day = -1
 
@@ -73,8 +73,8 @@ class StateModel:
         return state_report
 
     def _get_vaccines(self, day):
-        self._pfizer += int((day/7)*100000)
-        self._moderna += int((day/7)*100000)
+        self._pfizer += int((day/7)*250)
+        self._moderna += int((day/7)*250)
 
     def distribute_vaccines(self, pfizer_plan, moderna_plan, maxPfizer = -1, maxModerna = -1):
         if(maxPfizer == -1):

@@ -6,7 +6,7 @@ import math
 import random
 
 class RegionModel:
-    def __init__(self, isSmallRegion=False, name=0, noise=False, N=1000, HRR=0.25, I0=1, R0=0, beta=0.2, gamma=1./20):
+    def __init__(self, isSmallRegion=False, name=0, seed = 123456, noise=False, N=1000, HRR=0.25, I0=1, R0=0, beta=0.2, gamma=1./20):
         self.name = name
         # Total population, N.
         self.N = N
@@ -16,6 +16,7 @@ class RegionModel:
         # Everyone else, S0, is susceptible to infection initially.
         self.S0 = self.N - self.I0 - self.R0
         # Contact rate, beta, and mean recovery rate, gamma, (in 1/days).
+        self.seed = seed + name
         self.beta,  self.gamma = beta, gamma
         self.susceptible = [self.S0]
         self.susceptibleNoVax = [self.S0]
@@ -41,7 +42,10 @@ class RegionModel:
         moderna = vaccine("moderna")
         self.vacTypes = {"pfizer": pfizer, "moderna":moderna}
         
+
     def tick_time(self):
+        np.random.seed(self.seed*2 + self.units)
+
         t = self.units*self.dt
         self.time.append(t)
         self.vacTypes['pfizer'].addVaccines(self.vaccine_pfizer_count)
@@ -105,14 +109,15 @@ class RegionModel:
         d_inf = -1*(d_sus) - self.gamma*self.infected[t - 1]
         d_rec = self.gamma*self.infected[t - 1]
 
-        if False: #self.noise:
-            mu, sigma = d_inf, math.sqrt(self.gamma*self.infected[t - 1]/2) # mean and standard deviation
+        if True: #self.noise:
+            
+            mu, sigma = d_inf, math.sqrt(self.gamma*self.infected[t - 1]) # mean and standard deviation
             d_inf = np.random.normal(mu, sigma)
             
-            mu, sigma = d_sus, math.sqrt((self.beta*self.susceptible[t - 1]*self.infected[t - 1])/self.N/2) # mean and standard deviation
+            mu, sigma = d_sus, math.sqrt((self.beta*self.susceptible[t - 1]*self.infected[t - 1])/self.N) # mean and standard deviation
             d_sus = np.random.normal(mu, sigma)
-
-            mu, sigma = d_rec, math.sqrt(self.gamma*self.infected[t - 1]/2) # mean and standard deviation
+        
+            mu, sigma = d_rec, math.sqrt(self.gamma*self.infected[t - 1]) # mean and standard deviation
             d_rec = np.random.normal(mu, sigma)
 
         self.vaccinated.append(self.vaccinated[t - 1] + d_vacB)

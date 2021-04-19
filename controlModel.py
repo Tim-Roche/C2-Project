@@ -150,10 +150,10 @@ class controlModel():
         return([round(i,2) for i in l])
 
     def calculateDistroPlan(self, reports,force=None):
-        normInfRate = self.scale(self.getInfectionRate(reports),100) #self.getPRRpercentInfections(reports)
+        normInfRate = self.scale(self.getInfectionRate(reports),1) #self.getPRRpercentInfections(reports)
         #print(normInfRate)
         normHR = self.scale(self.getPercentageHighRisk(reports),1) #self.getPRRpercentageHighRisk(reports)
-        normSus = self.scale(self.getSusceptible(reports),50) #self.getPRR_R0(reports)
+        normSus = self.scale(self.getSusceptible(reports),1) #self.getPRR_R0(reports)
         normPIN =  self.scale(self.getPercentageInfections(reports),1)
         #print(self.roundList(list(normInfRate[0:3])))
         #print(self.roundList(list(normHR[0:3])))
@@ -206,7 +206,7 @@ class controlModel():
         self.reports = reports
         self.stateReports = state_report
 
-        if(state_report.get_infected() < 50000):
+        if(state_report.get_infected() < 10):
             if(self.toggle):
                 print(state_report.get_infected(), state_report.get_day())
                 print("Dead: ", state_report.get_dead())
@@ -226,7 +226,7 @@ class controlModel():
 
 
         self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer = reservedPfizer, maxModerna = reservedModerna)
-        masterDistroPlan = self.calculateDistroPlan(reports) #,force=[0,0,0,0,0,0,0,0,0]
+        masterDistroPlan = self.calculateDistroPlan(reports, force=[1,1,1,1,1,1,1,1,1])
 
 
         smallRegionsOnly = np.multiply(masterDistroPlan, regionSizes)
