@@ -75,7 +75,7 @@ totalDay = []
 totalDead = []
 totalVaccinated = []
 totalSusHR = []
-weights = [1,1,1,1]
+weights = [17,1,0,0]
 c = controlModel(columns, rows, weights)
 s = c.state
 

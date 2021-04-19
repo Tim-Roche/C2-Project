@@ -20,9 +20,10 @@ class controlModel():
         self.pointsPerRegion = [0 for i in range (0, rows*columns)]
         self.toggle = False
         self.weights = weights
+        self.ratePrev = None
 
 
-    def getPercentVaccinated(self, reports, mul100=False):
+    def getPercentVaccinated(self, reports, mul100=False, inverse=False):
         allRegionVaccinations = []
         for cr in reports:
             for report in cr:
@@ -35,6 +36,8 @@ class controlModel():
                 if(mul100):
                     PV = PV*100
                     PV = int(PV)
+                if(inverse):
+                    PV = 1-PV
                 allRegionVaccinations.append(PV)
         return(allRegionVaccinations)    
 
@@ -42,7 +45,7 @@ class controlModel():
         if(sum(values) > 0):
             return([(weight*value)/sum(values) for value in values])  
         else:
-            print(values)
+            #print(values)
             return([0 for value in values])
 
     def PRR(self, values, weight=1):
@@ -96,6 +99,14 @@ class controlModel():
                 allInfectionRates.append(irate)
         return(allInfectionRates)       
 
+    def getInfectionRateRate(self,reports):
+        allInfectionRates = self.getInfectionRate(reports)
+        if(self.ratePrev == None):
+            self.ratePrev = allInfectionRates
+        IRR = np.subtract(allInfectionRates, self.ratePrev)
+        self.ratePrev = allInfectionRates
+        return(IRR)
+
     def getPercentageHighRisk(self, reports, mul100=False):
         rs = []
         regionNames = []
@@ -140,14 +151,17 @@ class controlModel():
         PRR_R0 = self.PRR(R0s, regionNames)
         return(PRR_R0)
 
-    def getVaccineLimit(self, reports):
+    def getVaccineLimit(self, reports, cost=False):
         limits = []
         for cr in reports:
             for report in cr:
                 numVac = report.get_pfizer() + report.get_moderna()
                 max_n = report.get_distroLimit()
                 limit = max_n - numVac
-                limit = max(limit,0.0)
+                if cost:
+                    limit = min(numVac/max_n,1)
+                    limit = 1 - limit
+                #limit = max(limit,0.0)
                 limits.append(limit)
         return(limits)
 
@@ -184,20 +198,23 @@ class controlModel():
         normInfRate = self.scale(self.getInfectionRate(reports),self.weights[0]) #self.getPRRpercentInfections(reports)
         #print(normInfRate)
         normHR = self.scale(self.getPercentageHighRisk(reports),self.weights[1]) #self.getPRRpercentageHighRisk(reports)
-        normSus = self.scale(self.getSusceptible(reports),self.weights[2]) #self.getPRR_R0(reports)
+        normSus = self.scale(self.getVaccineLimit(reports,cost=True),self.weights[2]) #self.getPRR_R0(reports)
         #normPIN =  self.scale(self.getPercentageInfections(reports),self.weights[3])
-        lim =  self.scale(self.getVaccineLimit(reports),self.weights[3])
+        #lim =  self.scale(self.getVaccineLimit(reports),self.weights[3])
+        normPV = self.scale(self.getInfectionRateRate(reports), self.weights[3])
         #print(self.roundList(list(normInfRate[0:3])))
         #print(self.roundList(list(normHR[0:3])))
         #print(self.roundList(list(normSus[0:3])))
         #print()
         self.pointsPerRegion = list(np.add(normInfRate, normHR))
         self.pointsPerRegion = np.add(self.pointsPerRegion, normSus)
-        self.pointsPerRegion = np.add(self.pointsPerRegion, lim)
+        self.pointsPerRegion = np.add(self.pointsPerRegion, normPV)
+        #print(self.getVaccineLimit(reports))
+        #overflowMask = [int(x >= 0) for x in self.getVaccineLimit(reports)]
+        #self.pointsPerRegion = np.multiply(self.pointsPerRegion, overflowMask)
         if(force != None):
             self.pointsPerRegion = force
         masterPlan = self.normalizeAndReshape(self.pointsPerRegion)
-        #print(masterPlan)
         return masterPlan
 
     def calculateReservedVaccines(self, reports):
@@ -245,12 +262,12 @@ class controlModel():
         try:
             pfizerOnly = np.multiply(regionTotals,mask)
         except:
-            print(regionTotals)
-            print(mask)
+            #print(regionTotals)
+            #print(mask)
             exit(1)
         pfizerOnly = self.normalizeAndReshape(pfizerOnly)
         self.state.distribute_vaccines(pfizerOnly, pfizerOnly, maxModerna=0)
-        np.subtract(regionTotals, np.multiply(pfizerOnly,self.undistributedPfizer))
+        regionTotals= np.subtract(regionTotals, np.multiply(pfizerOnly,self.undistributedPfizer))
         self.undistributedPfizer = 0
         for row in range(0,self.rows):
             for col in range(0,self.columns):
@@ -328,31 +345,39 @@ class controlModel():
     def getDay(self):
         return(self.state.get_day())
 
-
-# best_weights = []
-# best_deaths = -1
-# for infectionRate in range (1,6,1):
-#     print(infectionRate)
-#     for highrisk in range (0,6,1):
-#         for sus in range(0, 6, 1):
-#             for pin in range(0, 6, 1):
-#                 weights = [infectionRate,highrisk,sus,pin]
-#                 c = controlModel(3, 3,weights)
-#                 notComplete = True
-#                 while notComplete:
-#                     notComplete = c.tick_time(verbose=False)
-#                 print("---------------")
-#                 #print(weights)
-#                 #print(c.getDeaths())
-#                 if c.getDeaths() < best_deaths or best_deaths == -1:
-#                     best_deaths = c.getDeaths()
-#                     best_weights = weights
-#                     print("---------------")
-#                     print(weights)
-#                     print(c.getDeaths())
-
-weights = [1,5,0,0]
+"""
+failed = False
+best_weights = []
+best_deaths = -1
+for infectionRate in range (1,20,1):
+    print(infectionRate)
+    for highrisk in range (0,6,1):
+        for sus in range(0, 2, 1):
+            for pin in range(0, 2, 1):
+                failed = False
+                weights = [infectionRate,highrisk,sus,pin]
+                c = controlModel(3, 3,weights)
+                notComplete = True
+                while notComplete:
+                    notComplete = c.tick_time(verbose=False)
+                    day = c.getDay()
+                    if(day > 1000):
+                        notComplete = False
+                        failed = True
+                        #print("FAILED")
+                #print("---------------")
+                #print(weights)
+            #print(c.getDeaths())
+                if (failed == False) and (c.getDeaths() < best_deaths or best_deaths == -1):
+                    best_deaths = c.getDeaths()
+                    best_weights = weights
+                    print("---------------")
+                    print(weights)
+                    print(c.getDeaths())
+"""
+weights = [17,1,0,0]
 c = controlModel(3, 3,weights)
 notComplete = True
 while notComplete:
     notComplete = c.tick_time(verbose=True)
+print(c.getDeaths())
