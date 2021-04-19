@@ -9,7 +9,7 @@ from Report import Report
 import time
 
 class controlModel():
-    def __init__(self, rows, columns):
+    def __init__(self, rows, columns, weights):
         self.rows = rows
         self.columns = columns
         self.state = StateModel(self.rows,self.columns)
@@ -19,6 +19,7 @@ class controlModel():
         self.undistributedModerna = 0
         self.pointsPerRegion = [0 for i in range (0, rows*columns)]
         self.toggle = False
+        self.weights = weights
 
 
     def getPercentVaccinated(self, reports, mul100=False):
@@ -37,10 +38,11 @@ class controlModel():
                 allRegionVaccinations.append(PV)
         return(allRegionVaccinations)    
 
-    def scale(self, values, weight=1):
+    def scale(self, values, weight):
         if(sum(values) > 0):
             return([(weight*value)/sum(values) for value in values])  
         else:
+            print(values)
             return([0 for value in values])
 
     def PRR(self, values, weight=1):
@@ -111,7 +113,7 @@ class controlModel():
         for cr in reports:
             for report in cr:
                 sus = report.get_susceptible()
-                allRPop.append(sus)
+                allRPop.append(max(sus,0))
         return(allRPop)      
 
     def getPRRpercentageHighRisk(self, reports):
@@ -140,14 +142,13 @@ class controlModel():
 
     def getVaccineLimit(self, reports):
         limits = []
-        regionNames = []
         for cr in reports:
             for report in cr:
                 numVac = report.get_pfizer() + report.get_moderna()
-                max = report.get_distroLimit()
-                limit = max - numVac
+                max_n = report.get_distroLimit()
+                limit = max_n - numVac
+                limit = max(limit,0.0)
                 limits.append(limit)
-                regionNames.append(report.get_region())
         return(limits)
 
     def getPPRVaccineLimit(self, reports):
@@ -180,18 +181,19 @@ class controlModel():
         return([round(i,2) for i in l])
 
     def calculateDistroPlan(self, reports,force=None):
-        normInfRate = self.scale(self.getInfectionRate(reports),1) #self.getPRRpercentInfections(reports)
+        normInfRate = self.scale(self.getInfectionRate(reports),self.weights[0]) #self.getPRRpercentInfections(reports)
         #print(normInfRate)
-        normHR = self.scale(self.getPercentageHighRisk(reports),1) #self.getPRRpercentageHighRisk(reports)
-        normSus = self.scale(self.getSusceptible(reports),1) #self.getPRR_R0(reports)
-        normPIN =  self.scale(self.getPercentageInfections(reports),1)
+        normHR = self.scale(self.getPercentageHighRisk(reports),self.weights[1]) #self.getPRRpercentageHighRisk(reports)
+        normSus = self.scale(self.getSusceptible(reports),self.weights[2]) #self.getPRR_R0(reports)
+        #normPIN =  self.scale(self.getPercentageInfections(reports),self.weights[3])
+        lim =  self.scale(self.getVaccineLimit(reports),self.weights[3])
         #print(self.roundList(list(normInfRate[0:3])))
         #print(self.roundList(list(normHR[0:3])))
         #print(self.roundList(list(normSus[0:3])))
         #print()
         self.pointsPerRegion = list(np.add(normInfRate, normHR))
         self.pointsPerRegion = np.add(self.pointsPerRegion, normSus)
-        self.pointsPerRegion = np.add(self.pointsPerRegion, normPIN)
+        self.pointsPerRegion = np.add(self.pointsPerRegion, lim)
         if(force != None):
             self.pointsPerRegion = force
         masterPlan = self.normalizeAndReshape(self.pointsPerRegion)
@@ -317,14 +319,40 @@ class controlModel():
                 for ry in rx:
                     print(ry)
             print("Remaining: " + str(state_report.get_population() - (state_report.get_recovered() + state_report.get_vaccinated() + state_report.get_dead())))
+
         return(notComplete)
+
+    def getDeaths(self):
+        return self.stateReports.get_dead()
 
     def getDay(self):
         return(self.state.get_day())
 
-c = controlModel(3, 3)
 
+# best_weights = []
+# best_deaths = -1
+# for infectionRate in range (1,6,1):
+#     print(infectionRate)
+#     for highrisk in range (0,6,1):
+#         for sus in range(0, 6, 1):
+#             for pin in range(0, 6, 1):
+#                 weights = [infectionRate,highrisk,sus,pin]
+#                 c = controlModel(3, 3,weights)
+#                 notComplete = True
+#                 while notComplete:
+#                     notComplete = c.tick_time(verbose=False)
+#                 print("---------------")
+#                 #print(weights)
+#                 #print(c.getDeaths())
+#                 if c.getDeaths() < best_deaths or best_deaths == -1:
+#                     best_deaths = c.getDeaths()
+#                     best_weights = weights
+#                     print("---------------")
+#                     print(weights)
+#                     print(c.getDeaths())
+
+weights = [1,5,0,0]
+c = controlModel(3, 3,weights)
 notComplete = True
 while notComplete:
-   notComplete = c.tick_time(verbose=True)
-print("Done!")
+    notComplete = c.tick_time(verbose=True)

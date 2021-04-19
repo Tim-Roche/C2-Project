@@ -18,6 +18,7 @@ class StateModel:
         area = self._rows*self._columns
         smallRegions = int(area*0.2)
         isSmallRegions = [int(i<smallRegions) for i in range(0,area)]
+        random.seed(10)
 
         for row in range(0, self._rows):
             row_array = []
@@ -27,10 +28,12 @@ class StateModel:
                 #beta = random.randint(10,25)/100
                 #HRR = random.randint(10,60)/100
                 if(isSmallRegions[index]):
-                    regionSize = 150000
+                    #regionSize = 250000
+                    regionSize = random.randint(1,3)*100000
                     row_array.append(RegionModel(name=region_num, N=regionSize, beta=0.2,isSmallRegion=True)) #random.randint(500, 5000))
                 else:    
-                    regionSize = 500000
+                    #regionSize = 600000
+                    regionSize = random.randint(5,7)*100000
                     row_array.append(RegionModel(name=region_num, N=regionSize)) #random.randint(500, 5000))
                     
                 region_num += 1

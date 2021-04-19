@@ -75,7 +75,8 @@ totalDay = []
 totalDead = []
 totalVaccinated = []
 totalSusHR = []
-c = controlModel(columns, rows)
+weights = [1,1,1,1]
+c = controlModel(columns, rows, weights)
 s = c.state
 
 count = 1
@@ -238,7 +239,7 @@ while True:
     addTextbox("COVID-19 Dashboard", (400, 10))
 
     addTextbox("Pfizer Unused: " + str(int(stateReport.get_pfizer())), (770, 90))
-    addTextbox("Moderna Unused: " + str(int(stateReport.get_pfizer())), (740, 110))
+    addTextbox("Moderna Unused: " + str(int(stateReport.get_moderna())), (740, 110))
       
     for event in pygame.event.get():
         if event.type == QUIT:
