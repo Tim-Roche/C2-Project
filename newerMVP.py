@@ -1,5 +1,3 @@
-import pygame
-from pygame.locals import *
 from controlModel import controlModel
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36,9 +34,9 @@ start = 0
 fig = plt.figure()
 ax1 = fig.add_subplot(1,1,1)
 
-fig2 = plt.figure()
-bx1 = fig.add_subplot(1,1,1)
-bx1.plot([1, 2, 3], [4,5,6], label='Susceptible')
+#fig2 = plt.figure()
+#bx1 = fig.add_subplot(1,1,1)
+#bx1.plot([1, 2, 3], [4,5,6], label='Susceptible')
 plt.show()
 
 FRAMES_SECOND = 60

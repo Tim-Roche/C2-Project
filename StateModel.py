@@ -71,8 +71,8 @@ class StateModel:
         return state_report
 
     def _get_vaccines(self, day):
-        self._pfizer += int((day/7)*1000)
-        self._moderna += int((day/7)*1000)
+        self._pfizer += int((day/7)*500)
+        self._moderna += int((day/7)*500)
 
     def distribute_vaccines(self, pfizer_plan, moderna_plan, maxPfizer = -1, maxModerna = -1):
         if(maxPfizer == -1):

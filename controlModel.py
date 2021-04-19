@@ -15,6 +15,8 @@ class controlModel():
         self.state = StateModel(self.rows,self.columns)
         self.reports = None
         self.stateReports = None
+        self.undistributedPfizer = 0
+        self.undistributedModerna = 0
 
     def getPercentVaccinated(self, reports, mul100=False):
         allRegionVaccinations = []
@@ -103,17 +105,42 @@ class controlModel():
         PRR_R0 = self.PRR(R0s, regionNames)
         return(PRR_R0)
 
+    def getVaccineLimit(self, reports):
+        limits = []
+        regionNames = []
+        for cr in reports:
+            for report in cr:
+                numVac = report.get_pfizer() + report.get_moderna()
+                max = report.get_distroLimit()
+                limit = max - numVac
+                limits.append(limit)
+                regionNames.append(report.get_region())
+        return(limits)
+
+    def getPPRVaccineLimit(self, reports):
+        limits = self.getVaccineLimit(reports)
+        regionNames = [x for x in range(0, len(limits))]
+        PRR_limit = self.PRR(limits, regionNames)
+        return(PRR_limit)
+
+
     def normalizeAndReshape(self, array):
-        normal_array = [element/sum(array) for element in array]
-        output = np.reshape(normal_array, (self.columns,self.rows), order="F")
+        output = array
+        array = np.reshape(array, (self.columns*self.rows), order="F")
+        total = sum(array)
+        if total != 0:
+            normal_array = [element/total for element in array]
+            output = np.reshape(normal_array, (self.columns,self.rows), order="F")
         return(output)
 
     def calculateDistroPlan(self, reports):
         PRR_percentInfections = self.getPRRpercentInfections(reports)
         PRR_percentageHighRisk = self.getPRRpercentageHighRisk(reports)
         PRR_R0 = self.getPRR_R0(reports)
+        PPR_limit = self.getPPRVaccineLimit(reports)
         pointsPerRegion = list(np.add(PRR_percentInfections, PRR_percentageHighRisk))
         pointsPerRegion = np.add(pointsPerRegion, PRR_R0)
+        #pointsPerRegion = np.add(pointsPerRegion, PPR_limit) # Performs worse with this
         masterPlan = self.normalizeAndReshape(pointsPerRegion)
         return masterPlan
 
@@ -146,38 +173,66 @@ class controlModel():
     def getCurrentStateReport(self):
         return(self.stateReports)
 
+    def distributeReservedVaccines(self):
+        pfizer_reserved_map, moderna_reserved_map, reservedPfizer, reservedModerna = self.calculateReservedVaccines(self.reports)
+        self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer=reservedPfizer,maxModerna=reservedModerna)
+        self.undistributedPfizer -= reservedPfizer
+        self.undistributedModerna -= reservedModerna
+
+    def distributePfizerVaccines(self, regionTotals):
+        regionSizes = []
+        for rx in self.reports:
+            for ry in rx:
+                regionSizes.append(int(not ry.get_isSmallRegions()))
+        mask = np.reshape(regionSizes, (self.columns, self.rows), order="F")
+        pfizerOnly = np.multiply(regionTotals,mask)
+        pfizerOnly = self.normalizeAndReshape(pfizerOnly)
+        self.state.distribute_vaccines(pfizerOnly, pfizerOnly, maxModerna=0)
+        np.subtract(regionTotals, np.multiply(pfizerOnly,self.undistributedPfizer))
+        self.undistributedPfizer = 0
+        for row in range(0,self.rows):
+            for col in range(0,self.columns):
+                if regionTotals[row][col] < 0:
+                    regionTotals[row][col] = 0
+        return regionTotals
+
+    def distributeModernaVaccines(self, regionTotal):
+        modernaOnly = self.normalizeAndReshape(regionTotal)
+        self.state.distribute_vaccines(modernaOnly, modernaOnly)
+        self.undistributedModerna = 0
+
+
+
+
+    def distributeAllVaccines(self):
+        # Distribute Resereved Vaccines
+        self.distributeReservedVaccines()
+        # Calculate Region Vaccine Percentages
+        regionVaccinePerc = self.calculateDistroPlan(self.reports)
+        # Calculate Region Vaccine Total
+        regionVaccineTotal = list(np.multiply(regionVaccinePerc,(self.undistributedModerna + self.undistributedPfizer)))
+        # Distribute Pfizer Vaccines
+        regionVaccineTotal = self.distributePfizerVaccines(regionVaccineTotal)
+        # Distribute Moderna Vaccines
+        self.distributeModernaVaccines(regionVaccineTotal)
+
+
+
+        # Distribute Reserved Vaccines
+        self.distributeReservedVaccines()
+        # Distribute All Phizer Vaccines
+
 
     def tick_time(self, verbose=False):
         notComplete = True
         state_report, reports = self.state.tick_time()
         self.reports = reports
         self.stateReports = state_report
+        self.undistributedPfizer = self.stateReports.get_available_pfizer()
+        self.undistributedModerna = self.stateReports.get_available_moderna()
 
-        regionSizes = []
-        for rx in reports:
-            for ry in rx:
-                regionSizes.append(int(ry.get_isSmallRegions()))
-        regionSizes = np.reshape(regionSizes, (self.columns,self.rows), order="F")
-
-
-        pfizer_reserved_map, moderna_reserved_map, reservedPfizer, reservedModerna = self.calculateReservedVaccines(reports)
-
-
-        self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer = reservedPfizer, maxModerna = reservedModerna)
-        masterDistroPlan = self.calculateDistroPlan(reports)
-
-
-        smallRegionsOnly = np.multiply(masterDistroPlan, regionSizes)
-        totalSmallVaccines = sum(list(np.array(smallRegionsOnly)*self.stateReports.get_available_moderna()))
-        
-
-        #totalVaccines = get_available_pfizer() + get_available_moderna()
-        #absoluteDistro = [i*totalVaccines for i in masterDistroPlan]
-
-        #print(masterDistroPlan)
-        self.state.distribute_vaccines(masterDistroPlan, masterDistroPlan)
-    
-
+        if self.undistributedModerna != 0 or self.undistributedPfizer != 0:
+            self.distributeAllVaccines()
         remaining = state_report.get_population() - (state_report.get_recovered() + state_report.get_vaccinated() + state_report.get_dead())
         if(remaining <= 0):
             notComplete = False
@@ -194,11 +249,10 @@ class controlModel():
 
     def getDay(self):
         return(self.state.get_day())
-"""
-c = controlModel(2, 2)
+
+c = controlModel(3, 3)
 
 notComplete = True
 while notComplete:
     notComplete = c.tick_time(verbose=True)
 print("Done!")
-"""

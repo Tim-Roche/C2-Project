@@ -123,5 +123,5 @@ class RegionModel:
         
 
         report = Report(self.name, self.N, round(self.infected[t]), round(self.dead[t]), round(self.susceptible[t]), round(self.recovered[t]), round(self.vaccinated[t]),
-                        self.vacTypes['pfizer'].vaccineCount, self.vacTypes['moderna'].vaccineCount, self.beta, r, self.gamma, math.ceil(rolling7_P), math.ceil(rolling7_M), self.isSmallRegion, t)
+                        self.vacTypes['pfizer'].vaccineCount, self.vacTypes['moderna'].vaccineCount, self.beta, r, self.gamma, math.ceil(rolling7_P), math.ceil(rolling7_M), self.isSmallRegion, self.vaccine_distro_limit, t)
         return report
