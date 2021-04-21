@@ -27,14 +27,15 @@ class StateModel:
                 regionSize = 1
                 #beta = random.randint(10,25)/100
                 #HRR = random.randint(10,60)/100
+                HRR = random.randint(5,30)/100
                 if(isSmallRegions[index]):
                     #regionSize = 250000
                     regionSize = random.randint(1,3)*100000
-                    row_array.append(RegionModel(name=region_num, N=regionSize, beta=0.2,isSmallRegion=True)) #random.randint(500, 5000))
+                    row_array.append(RegionModel(name=region_num, N=regionSize, beta=0.2,HRR=HRR, isSmallRegion=True)) #random.randint(500, 5000))
                 else:    
                     #regionSize = 600000
                     regionSize = random.randint(5,7)*100000
-                    row_array.append(RegionModel(name=region_num, N=regionSize)) #random.randint(500, 5000))
+                    row_array.append(RegionModel(name=region_num, HRR=HRR,N=regionSize)) #random.randint(500, 5000))
                     
                 region_num += 1
             self._regions.append(row_array)

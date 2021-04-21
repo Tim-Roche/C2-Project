@@ -103,13 +103,15 @@ class RegionModel:
             #Normal Risk
             normRiskDead = self.infected[t-14]*(1-self.ratio[t-14])
             d_dea += min(normRiskDead*self.death_rate['normal'], self.infected[t-1]*(1-self.ratio[t-1]))
-
+            if(self.name == 2):
+                print(highRiskDead, normRiskDead)
         d_sus = -1*(self.beta*self.susceptible[t - 1]*self.infected[t - 1])/self.N
-        d_sus = min(d_sus - d_vacA,0)
+
+        #d_sus = min(d_sus,0)
         d_inf = -1*(d_sus) - self.gamma*self.infected[t - 1]
         d_rec = self.gamma*self.infected[t - 1]
 
-        if True: #self.noise:
+        if False: #self.noise:
             
             mu, sigma = d_inf, math.sqrt(self.gamma*self.infected[t - 1]) # mean and standard deviation
             d_inf = np.random.normal(mu, sigma)
@@ -123,11 +125,11 @@ class RegionModel:
         self.vaccinated.append(self.vaccinated[t - 1] + d_vacB)
         self.susceptible.append(max(self.susceptible[t-1] + d_sus - d_vacA,0))
         self.infected.append(max(min(self.infected[t-1] + d_inf - d_dea, self.N),0))
-        self.recovered.append(self.recovered[t-1] + d_rec)
-        self.dead.append(self.dead[t-1] + max(d_dea,0))
+        self.recovered.append(max(self.recovered[t-1] + d_rec,0))
+        self.dead.append(max(self.dead[t-1] + d_dea,0))
         
         
-        self.susHR.append(max(self.susHR[t - 1] - d_vacA - d_dead_highRisk - d_inf*self.ratio[t-1], 0))
+        self.susHR.append(max(self.susHR[t - 1] + (d_sus-d_vacA)*self.ratio[t-1], 0))
         r = 0
         if(self.susceptible[t] > 0):
             r = self.susHR[t]/self.susceptible[t]
@@ -138,9 +140,14 @@ class RegionModel:
         rolling7_P = self.vacTypes['pfizer'].rollingSevenDaySum()
         rolling7_M = self.vacTypes['moderna'].rollingSevenDaySum()
 
-        
+        inQ = sum(self.vacTypes['pfizer'].vac_q) + sum(self.vacTypes['moderna'].vac_q)
+        s = self.susceptible[t] + self.infected[t] + inQ + self.vaccinated[t] + self.recovered[t] + self.dead[t]
+        if(self.name == 2):
+
+            print("SUM: " + str(s), self.susHR[t])
+            print(self.susceptible[t], self.infected[t],inQ,self.vaccinated[t], self.recovered[t], self.dead[t])
 
         report = Report(self.name, self.N, round(self.infected[t]), round(self.dead[t]), round(self.susceptible[t]), round(self.recovered[t]), round(self.vaccinated[t]),
                         self.vacTypes['pfizer'].vaccineCount, self.vacTypes['moderna'].vaccineCount, self.beta, r, self.gamma, math.ceil(rolling7_P), math.ceil(rolling7_M), self.isSmallRegion, self.vaccine_distro_limit, d_inf, t)
 
-        return report
+        return report   

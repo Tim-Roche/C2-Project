@@ -336,6 +336,9 @@ class controlModel():
                 for ry in rx:
                     print(ry)
             print("Remaining: " + str(state_report.get_population() - (state_report.get_recovered() + state_report.get_vaccinated() + state_report.get_dead())))
+            print("Recovered: " + str(state_report.get_recovered()))
+            print("Vaccinated: " + str(state_report.get_vaccinated()))
+            print("Dead: " + str(state_report.get_dead()))
 
         return(notComplete)
 
@@ -375,9 +378,11 @@ for infectionRate in range (1,20,1):
                     print(weights)
                     print(c.getDeaths())
 """
+"""
 weights = [17,1,0,0]
 c = controlModel(3, 3,weights)
 notComplete = True
 while notComplete:
     notComplete = c.tick_time(verbose=True)
 print(c.getDeaths())
+"""
