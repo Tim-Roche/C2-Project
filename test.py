@@ -75,7 +75,7 @@ totalDay = []
 totalDead = []
 totalVaccinated = []
 totalSusHR = []
-weights = [17,1,0,0]
+weights = [17,1,1,1]
 c = controlModel(columns, rows, weights)
 s = c.state
 
@@ -218,7 +218,7 @@ while True:
 
     if(go):
         addTextbox("Pause", (buttonX+30,buttonY+5), size="button")
-        c.tick_time()
+        c.tick_time(verbose=False)
         s = c.state
         m = s.get_region(2,2)
 

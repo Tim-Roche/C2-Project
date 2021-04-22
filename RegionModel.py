@@ -31,7 +31,7 @@ class RegionModel:
         self.dt = 1
         self.vaccine_pfizer_count = 0 #Phizers recieved on a weekly basis
         self.vaccine_moderna_count = 0 #Modernas recieved on a weekly basis
-        self.vaccine_distro_limit = N*0.01 #Vaccines can be distro-ed in a week; Per Week
+        self.vaccine_distro_limit = N*0.05 #Vaccines can be distro-ed in a week; Per Week
         self.max_d_vac = round(self.vaccine_distro_limit/7) #min(self.vaccine_count, self.vaccine_limit)/7 
         self.death_rate = {"normal": 0.018, "high":0.05}
         self.vac_q = []
@@ -41,7 +41,19 @@ class RegionModel:
         pfizer = vaccine("pfizer")
         moderna = vaccine("moderna")
         self.vacTypes = {"pfizer": pfizer, "moderna":moderna}
-        
+
+
+    def addVaccPfizer(self, count):
+        self.vaccine_pfizer_count += count
+        if(self.name == 1):
+            print("New Pfizer!", count)
+        if(count==8024):
+            print(self.name, "recieved the vaccc")
+
+    def addVaccModerna(self, count):
+        self.vaccine_moderna_count += count
+
+
 
     def tick_time(self):
         np.random.seed(self.seed*2 + self.units)
@@ -64,6 +76,10 @@ class RegionModel:
                 #d_vacB = min(float(self.vac_q[:1][0]), self.max_d_vac)
                 FOL = v.frontOfLine()
                 vmax = 0
+                if(self.name == 1):
+                    print("Q is long enough!")
+                    print("FOL", FOL)
+                    print("RV", v.remainingVaccines(), vacDailyLimit)
                 if((v.remainingVaccines() > 0) and (vacDailyLimit > 0)):
                     vmax = min(FOL, min(v.remainingVaccines(),vacDailyLimit))
                     vmax = max(vmax, 0)
@@ -103,8 +119,8 @@ class RegionModel:
             #Normal Risk
             normRiskDead = self.infected[t-14]*(1-self.ratio[t-14])
             d_dea += min(normRiskDead*self.death_rate['normal'], self.infected[t-1]*(1-self.ratio[t-1]))
-            if(self.name == 2):
-                print(highRiskDead, normRiskDead)
+            #if(self.name == 2):
+            #    print(highRiskDead, normRiskDead)
         d_sus = -1*(self.beta*self.susceptible[t - 1]*self.infected[t - 1])/self.N
 
         #d_sus = min(d_sus,0)
@@ -142,10 +158,14 @@ class RegionModel:
 
         inQ = sum(self.vacTypes['pfizer'].vac_q) + sum(self.vacTypes['moderna'].vac_q)
         s = self.susceptible[t] + self.infected[t] + inQ + self.vaccinated[t] + self.recovered[t] + self.dead[t]
-        if(self.name == 2):
+        #if(self.name == 1):
+            #print("Remaining Vaccs" + str(v.remainingVaccines()))
+            #print("Q: ",inQ,rolling7_P,rolling7_M)
+            #print(self.vacTypes['pfizer'].vac_q)
+            #print(self.vacTypes['moderna'].vac_q)
 
-            print("SUM: " + str(s), self.susHR[t])
-            print(self.susceptible[t], self.infected[t],inQ,self.vaccinated[t], self.recovered[t], self.dead[t])
+        #    print("SUM: " + str(s), self.susHR[t])
+        #    print(self.susceptible[t], self.infected[t],inQ,self.vaccinated[t], self.recovered[t], self.dead[t])
 
         report = Report(self.name, self.N, round(self.infected[t]), round(self.dead[t]), round(self.susceptible[t]), round(self.recovered[t]), round(self.vaccinated[t]),
                         self.vacTypes['pfizer'].vaccineCount, self.vacTypes['moderna'].vaccineCount, self.beta, r, self.gamma, math.ceil(rolling7_P), math.ceil(rolling7_M), self.isSmallRegion, self.vaccine_distro_limit, d_inf, t)

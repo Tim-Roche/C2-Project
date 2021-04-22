@@ -32,6 +32,9 @@ class controlModel():
                 dead = report.get_dead()
                 recovered = report.get_recovered()
                 PV = vaccinations/(population - dead - recovered)
+                #if(int(report.get_region()) == 1):
+                 #   print("!!!!!")
+                  #  print(vaccinations, population, dead, recovered, PV)
                 PV = min(1, PV)
                 if(mul100):
                     PV = PV*100
@@ -39,6 +42,7 @@ class controlModel():
                 if(inverse):
                     PV = 1-PV
                 allRegionVaccinations.append(PV)
+        print(allRegionVaccinations)
         return(allRegionVaccinations)    
 
     def scale(self, values, weight):
@@ -198,7 +202,7 @@ class controlModel():
         normInfRate = self.scale(self.getInfectionRate(reports),self.weights[0]) #self.getPRRpercentInfections(reports)
         #print(normInfRate)
         normHR = self.scale(self.getPercentageHighRisk(reports),self.weights[1]) #self.getPRRpercentageHighRisk(reports)
-        normSus = self.scale(self.getVaccineLimit(reports,cost=True),self.weights[2]) #self.getPRR_R0(reports)
+        normSus = self.scale(self.getPercentVaccinated(reports, inverse=True),self.weights[2]) #self.getPRR_R0(reports)
         #normPIN =  self.scale(self.getPercentageInfections(reports),self.weights[3])
         #lim =  self.scale(self.getVaccineLimit(reports),self.weights[3])
         normPV = self.scale(self.getInfectionRateRate(reports), self.weights[3])
@@ -248,6 +252,7 @@ class controlModel():
 
     def distributeReservedVaccines(self):
         pfizer_reserved_map, moderna_reserved_map, reservedPfizer, reservedModerna = self.calculateReservedVaccines(self.reports)
+        print(pfizer_reserved_map)
         self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer=reservedPfizer,maxModerna=reservedModerna)
         self.undistributedPfizer -= reservedPfizer
         self.undistributedModerna -= reservedModerna
@@ -354,7 +359,7 @@ best_weights = []
 best_deaths = -1
 for infectionRate in range (1,20,1):
     print(infectionRate)
-    for highrisk in range (0,6,1):
+    for highrisk in range (0,2,1):
         for sus in range(0, 2, 1):
             for pin in range(0, 2, 1):
                 failed = False
@@ -368,21 +373,26 @@ for infectionRate in range (1,20,1):
                         notComplete = False
                         failed = True
                         #print("FAILED")
+                if(failed == False):
+                    print("not failed " + str(c.getDeaths()))
                 #print("---------------")
                 #print(weights)
             #print(c.getDeaths())
-                if (failed == False) and (c.getDeaths() < best_deaths or best_deaths == -1):
+                if (failed == False) and (c.getDeaths() <= best_deaths or best_deaths == -1):
                     best_deaths = c.getDeaths()
+                    print(day)
                     best_weights = weights
                     print("---------------")
                     print(weights)
                     print(c.getDeaths())
 """
 """
-weights = [17,1,0,0]
+weights = [17,1,1,1]
 c = controlModel(3, 3,weights)
 notComplete = True
 while notComplete:
-    notComplete = c.tick_time(verbose=True)
+    notComplete = c.tick_time()
+    #print(c.getPercentVaccinated(c.reports,mul100=True))
+
 print(c.getDeaths())
 """

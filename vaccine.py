@@ -21,7 +21,7 @@ class vaccine():
 
     def pop(self, remaining=0):
         self.vac_q = self.vac_q[1:]
-        self.vac_q[-1] += remaining
+        self.vac_q[0] += remaining
 
     def addVaccines(self, vaccines):
         self.vaccineCount+=vaccines

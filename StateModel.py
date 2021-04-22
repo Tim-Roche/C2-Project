@@ -91,9 +91,19 @@ class StateModel:
         for row in range(0, self._rows):
             for col in range(0, self._columns):
                 d_pfizer = min(round(pfizer_plan[row][col]*prev_pfizer), self._pfizer)
+                if(row == 1):
+                    if(col == 0):
+                        if(d_pfizer is not None):
+                            if(prev_pfizer != 0):
+                                print("XXXXXXXXXXXXX")
+                                print(prev_pfizer)
+                                print(pfizer_plan[row][col])
+                                print(d_pfizer)
+                                print("ZZZZZZZZZZZZZ")
                 d_moderna = min(round(moderna_plan[row][col]*prev_moderna), self._moderna)
-                self._regions[row][col].vaccine_pfizer_count += d_pfizer
-                self._regions[row][col].vaccine_moderna_count += d_moderna
+                print(d_pfizer)
+                self._regions[col][row].addVaccPfizer(d_pfizer) #vaccine_pfizer_count += d_pfizer
+                self._regions[col][row].addVaccModerna(d_moderna) #vaccine_moderna_count += d_moderna
                 self._pfizer -= d_pfizer
                 self._moderna -= d_moderna
 
