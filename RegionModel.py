@@ -6,11 +6,12 @@ import math
 import random
 
 class RegionModel:
-    def __init__(self, isSmallRegion=False, name=0, seed = 123456, noise=False, N=1000, HRR=0.25, I0=1, R0=0, beta=0.2, gamma=1./20):
+    def __init__(self, isSmallRegion=False, name=0, seed = 123456, noise=False, N=1000, HRR=0.25, I0=1, R0=0, beta=0.2, gamma=1./20,startDate=0):
         self.name = name
         # Total population, N.
         self.N = N
         self.susHR = [self.N*HRR]
+        self.startDate = startDate
         # Initial number of infected and recovered individuals, I0 and R0.
         self.I0, self.R0 = I0, R0
         # Everyone else, S0, is susceptible to infection initially.
@@ -29,6 +30,7 @@ class RegionModel:
         self.time = [0]
         self.units = 1
         self.dt = 1
+        self.hasStarted = False
         self.vaccine_pfizer_count = 0 #Phizers recieved on a weekly basis
         self.vaccine_moderna_count = 0 #Modernas recieved on a weekly basis
         self.vaccine_distro_limit = N*0.05 #Vaccines can be distro-ed in a week; Per Week
@@ -45,10 +47,10 @@ class RegionModel:
 
     def addVaccPfizer(self, count):
         self.vaccine_pfizer_count += count
-        if(self.name == 1):
-            print("New Pfizer!", count)
-        if(count==8024):
-            print(self.name, "recieved the vaccc")
+        #if(self.name == 1):
+        #    print("New Pfizer!", count)
+        #if(count==8024):
+        #    print(self.name, "recieved the vaccc")
 
     def addVaccModerna(self, count):
         self.vaccine_moderna_count += count
@@ -60,6 +62,12 @@ class RegionModel:
 
         t = self.units*self.dt
         self.time.append(t)
+
+        if(t >= self.startDate):
+            self.hasStarted = True
+        #else:
+            #print(self.name, t, self.startDate)
+
         self.vacTypes['pfizer'].addVaccines(self.vaccine_pfizer_count)
         self.vacTypes['moderna'].addVaccines(self.vaccine_moderna_count)
         self.vaccine_moderna_count = 0
@@ -76,10 +84,10 @@ class RegionModel:
                 #d_vacB = min(float(self.vac_q[:1][0]), self.max_d_vac)
                 FOL = v.frontOfLine()
                 vmax = 0
-                if(self.name == 1):
-                    print("Q is long enough!")
-                    print("FOL", FOL)
-                    print("RV", v.remainingVaccines(), vacDailyLimit)
+                #if(self.name == 1):
+                #    print("Q is long enough!")
+                #    print("FOL", FOL)
+                #    print("RV", v.remainingVaccines(), vacDailyLimit)
                 if((v.remainingVaccines() > 0) and (vacDailyLimit > 0)):
                     vmax = min(FOL, min(v.remainingVaccines(),vacDailyLimit))
                     vmax = max(vmax, 0)
@@ -127,23 +135,27 @@ class RegionModel:
         d_inf = -1*(d_sus) - self.gamma*self.infected[t - 1]
         d_rec = self.gamma*self.infected[t - 1]
 
-        if False: #self.noise:
+        if True: #self.noise:
             
-            mu, sigma = d_inf, math.sqrt(self.gamma*self.infected[t - 1]) # mean and standard deviation
-            d_inf = np.random.normal(mu, sigma)
-            
-            mu, sigma = d_sus, math.sqrt((self.beta*self.susceptible[t - 1]*self.infected[t - 1])/self.N) # mean and standard deviation
-            d_sus = np.random.normal(mu, sigma)
-        
-            mu, sigma = d_rec, math.sqrt(self.gamma*self.infected[t - 1]) # mean and standard deviation
-            d_rec = np.random.normal(mu, sigma)
+            mu, sigma = 0, math.sqrt(self.gamma*self.infected[t - 1]*2) # mean and standard deviation
+            noise = np.random.normal(mu, sigma)
+            #print(noise)
+            if(max(self.susceptible[t-1] + d_sus - d_vacA,0) - d_inf > 0):
+                d_inf = d_inf + noise
+                d_sus = d_sus - noise
 
-        self.vaccinated.append(self.vaccinated[t - 1] + d_vacB)
-        self.susceptible.append(max(self.susceptible[t-1] + d_sus - d_vacA,0))
-        self.infected.append(max(min(self.infected[t-1] + d_inf - d_dea, self.N),0))
-        self.recovered.append(max(self.recovered[t-1] + d_rec,0))
-        self.dead.append(max(self.dead[t-1] + d_dea,0))
-        
+        if(self.hasStarted):
+            self.vaccinated.append(self.vaccinated[t - 1] + d_vacB)
+            self.susceptible.append(max(self.susceptible[t-1] + d_sus - d_vacA,0))
+            self.infected.append(max(min(self.infected[t-1] + d_inf - d_dea, self.N),0))
+            self.recovered.append(max(self.recovered[t-1] + d_rec,0))
+            self.dead.append(max(self.dead[t-1] + d_dea,0))
+        else:
+            self.vaccinated.append(self.vaccinated[t - 1])
+            self.susceptible.append(self.susceptible[t-1])
+            self.infected.append(self.infected[t-1])
+            self.recovered.append(self.recovered[t-1])
+            self.dead.append(self.dead[t-1])   
         
         self.susHR.append(max(self.susHR[t - 1] + (d_sus-d_vacA)*self.ratio[t-1], 0))
         r = 0

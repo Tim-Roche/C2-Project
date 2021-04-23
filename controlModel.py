@@ -42,7 +42,7 @@ class controlModel():
                 if(inverse):
                     PV = 1-PV
                 allRegionVaccinations.append(PV)
-        print(allRegionVaccinations)
+        #print(allRegionVaccinations)
         return(allRegionVaccinations)    
 
     def scale(self, values, weight):
@@ -109,6 +109,7 @@ class controlModel():
             self.ratePrev = allInfectionRates
         IRR = np.subtract(allInfectionRates, self.ratePrev)
         self.ratePrev = allInfectionRates
+        IRR = [max(I, 0) for I in IRR]
         return(IRR)
 
     def getPercentageHighRisk(self, reports, mul100=False):
@@ -206,6 +207,7 @@ class controlModel():
         #normPIN =  self.scale(self.getPercentageInfections(reports),self.weights[3])
         #lim =  self.scale(self.getVaccineLimit(reports),self.weights[3])
         normPV = self.scale(self.getInfectionRateRate(reports), self.weights[3])
+        
         #print(self.roundList(list(normInfRate[0:3])))
         #print(self.roundList(list(normHR[0:3])))
         #print(self.roundList(list(normSus[0:3])))
@@ -252,7 +254,7 @@ class controlModel():
 
     def distributeReservedVaccines(self):
         pfizer_reserved_map, moderna_reserved_map, reservedPfizer, reservedModerna = self.calculateReservedVaccines(self.reports)
-        print(pfizer_reserved_map)
+        #print(pfizer_reserved_map)
         self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer=reservedPfizer,maxModerna=reservedModerna)
         self.undistributedPfizer -= reservedPfizer
         self.undistributedModerna -= reservedModerna
@@ -307,7 +309,7 @@ class controlModel():
         # Distribute Resereved Vaccines
         self.distributeReservedVaccines()
         # Calculate Region Vaccine Percentages
-        regionVaccinePerc = self.calculateDistroPlan(self.reports)
+        regionVaccinePerc = self.calculateDistroPlan(self.reports) #, force=[1,1,1,1,1,1,1,1,1]
         # Calculate Region Vaccine Total
         regionVaccineTotal = list(np.multiply(regionVaccinePerc,(self.undistributedModerna + self.undistributedPfizer)))
         # Distribute Pfizer Vaccines
@@ -353,46 +355,53 @@ class controlModel():
     def getDay(self):
         return(self.state.get_day())
 
-"""
-failed = False
-best_weights = []
-best_deaths = -1
-for infectionRate in range (1,20,1):
-    print(infectionRate)
-    for highrisk in range (0,2,1):
-        for sus in range(0, 2, 1):
-            for pin in range(0, 2, 1):
-                failed = False
-                weights = [infectionRate,highrisk,sus,pin]
-                c = controlModel(3, 3,weights)
-                notComplete = True
-                while notComplete:
-                    notComplete = c.tick_time(verbose=False)
-                    day = c.getDay()
-                    if(day > 1000):
-                        notComplete = False
-                        failed = True
-                        #print("FAILED")
-                if(failed == False):
-                    print("not failed " + str(c.getDeaths()))
-                #print("---------------")
-                #print(weights)
-            #print(c.getDeaths())
-                if (failed == False) and (c.getDeaths() <= best_deaths or best_deaths == -1):
-                    best_deaths = c.getDeaths()
-                    print(day)
-                    best_weights = weights
-                    print("---------------")
-                    print(weights)
-                    print(c.getDeaths())
-"""
-"""
-weights = [17,1,1,1]
-c = controlModel(3, 3,weights)
-notComplete = True
-while notComplete:
-    notComplete = c.tick_time()
-    #print(c.getPercentVaccinated(c.reports,mul100=True))
+if __name__ == "__main__":
+    """
+    failed = False
+    best_weights = []
+    best_deaths = -1
+    costs = []
+    for infectionRate in range (1,5,1):
+        print(infectionRate)
+        for highrisk in range (0,5,1):
+            for sus in range(0, 5, 1):
+                for pin in range(0, 5, 1):
+                    failed = False
+                    weights = [infectionRate,highrisk,sus,pin]
+                    c = controlModel(3, 3,weights)
+                    notComplete = True
+                    while notComplete:
+                        notComplete = c.tick_time(verbose=False)
+                        day = c.getDay()
+                        if(day > 1000):
+                            notComplete = False
+                            failed = True
+                            #print("FAILED")
+                    if(failed == False):
+                        print("not failed " + str(c.getDeaths()))
+                        #print("---------------")
+                        #print(weights)
+                        #print(c.getDeaths())
+                        print([weights, day, c.getDeaths()])
+                        costs.append([weights[0],weights[1],weights[2],weights[3], day, c.getDeaths()])
+                    if (failed == False) and (c.getDeaths() <= best_deaths or best_deaths == -1):
+                        best_deaths = c.getDeaths()
+                        print(day)
+                        best_weights = weights
+                        print("---------------")
+                        print(weights)
+                        print(c.getDeaths())
 
-print(c.getDeaths())
+    print(costs)
+    a = np.asarray(costs)
+    np.savetxt("foo1.csv", a, delimiter=",")
 """
+    weights = [17,0,0,15]
+    c = controlModel(3, 3,weights)
+    notComplete = True
+    while notComplete:
+        notComplete = c.tick_time()
+        #print(c.getPercentVaccinated(c.reports,mul100=True))
+    print(weights)
+    print(c.getDay())
+    print(c.getDeaths())
