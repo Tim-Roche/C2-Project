@@ -6,6 +6,19 @@ import matplotlib
 import matplotlib.animation as animation
 from controlModel import controlModel
 import Report
+import sys
+
+algorithm = "weighted"
+if(len(sys.argv) > 1):
+    if(sys.argv[1] == "even"):
+        algorithm = "even"
+    elif(sys.argv[1] == "weighted"):
+        algorithm = "weighted"
+    else:
+        print("Unknown Input")
+        print("Try 'even' or 'weighted'")
+        exit(0)
+
 
 matplotlib.use("Agg")
 
@@ -191,13 +204,13 @@ def plotPercentageInfections(reports, stateReport):
     surf = writeToScreen(heatCanvas)
     return(surf)
 
-def addTextbox(text, loc, size="small"):
+def addTextbox(text, loc, size="small",color=BLACK):
     f = font
     if(size == "large"):
         f = font2
     elif(size == "button"):
         f = smallfont
-    text_surf = f.render(text, True, BLACK)
+    text_surf = f.render(text, True, color)
     screen.blit(text_surf, loc)
 
 buttonX = 820
@@ -207,9 +220,16 @@ go = True
 notComplete = True
 finalDay = -1
 finalDeaths = -1
-c.setControlAlgorithm(algorithm="weighted")
+
+if(algorithm == "even"):
+    c.setControlAlgorithm(algorithm="even")
+else:
+    c.setControlAlgorithm(algorithm="weighted")
+
+
 #c.setControlAlgorithm(algorithm="even")
 while True: 
+    #if(c.algorithm == "even"):
     mouse = pygame.mouse.get_pos()
 
     screen.fill((255, 255, 255))
@@ -260,8 +280,9 @@ while True:
         addTextbox("All Persons Vaccinated!", (755, 90))
         addTextbox("Final Day: " + str(finalDay), (755, 110))
         addTextbox("Total Vaccinated: " + str(round(c.getTotalVaccinated(reports)/1000,3)) + "k", (755, 130))
-        addTextbox("Final Deaths: " + str(round(c.getDeaths()/1000,3)) + "k", (755, 150))     
-      
+        addTextbox("Final Deaths: " + str(round(c.getDeaths()/1000,3)) + "k", (755, 150))  
+    if(c.algorithm == "even"):
+        addTextbox("Even Distribution Enabled", (10, 10), color=RED)  
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()

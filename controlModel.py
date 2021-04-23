@@ -379,6 +379,7 @@ class controlModel():
         return(self.state.get_day())
 
 if __name__ == "__main__":
+    """
     failed = False
     best_weights = []
     best_deaths = -1
@@ -417,11 +418,11 @@ if __name__ == "__main__":
     print(costs)
     a = np.asarray(costs)
     np.savetxt("foo1.csv", a, delimiter=",")
-
     """
-    weights = [2,0,1,19]
+
+    weights = [1,0,1,5]
     c = controlModel(3, 3,weights)
-    algorithm = "even"
+    algorithm = "weighted" #"even"
     c.setControlAlgorithm(algorithm=algorithm)
     notComplete = True
     while notComplete:
@@ -433,4 +434,3 @@ if __name__ == "__main__":
         print(algorithm)
     print("Days: ", c.getDay())
     print("Deaths: ", c.getDeaths())
-"""
