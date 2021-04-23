@@ -21,7 +21,18 @@ class controlModel():
         self.toggle = False
         self.weights = weights
         self.ratePrev = None
+        self.algorithm = "weighted"
 
+    def setControlAlgorithm(self,algorithm="weighted"):
+        self.algorithm = algorithm
+
+    def getTotalVaccinated(self,reports):
+        totalVac = 0
+        for cr in reports:
+            for report in cr:
+                vaccinations = report.get_vaccinated()
+                totalVac += vaccinations
+        return(totalVac)           
 
     def getPercentVaccinated(self, reports, mul100=False, inverse=False):
         allRegionVaccinations = []
@@ -216,8 +227,10 @@ class controlModel():
         self.pointsPerRegion = np.add(self.pointsPerRegion, normSus)
         self.pointsPerRegion = np.add(self.pointsPerRegion, normPV)
         #print(self.getVaccineLimit(reports))
-        #overflowMask = [int(x >= 0) for x in self.getVaccineLimit(reports)]
-        #self.pointsPerRegion = np.multiply(self.pointsPerRegion, overflowMask)
+        overflowMask = [int(x >= 0) for x in self.getVaccineLimit(reports)]
+        self.pointsPerRegion = np.multiply(self.pointsPerRegion, overflowMask)
+        noOneLeftMask = [int(x > 0) for x in self.getSusceptible(reports)]
+        self.pointsPerRegion = np.multiply(self.pointsPerRegion, noOneLeftMask)
         if(force != None):
             self.pointsPerRegion = force
         masterPlan = self.normalizeAndReshape(self.pointsPerRegion)
@@ -234,7 +247,7 @@ class controlModel():
                 moderna_reserved = min(moderna_reserved, dlim - pfizer_reserved)
                 pfizer_reserved_map.append(pfizer_reserved)
                 moderna_reserved_map.append(moderna_reserved)
-                print(dlim, pfizer_reserved+moderna_reserved)
+                #print(dlim, pfizer_reserved+moderna_reserved)
 
         reservedPfizer = sum(pfizer_reserved_map)
         reservedModerna = sum(moderna_reserved_map)
@@ -258,7 +271,7 @@ class controlModel():
     def distributeReservedVaccines(self):
         pfizer_reserved_map, moderna_reserved_map, reservedPfizer, reservedModerna = self.calculateReservedVaccines(self.reports)
         #print(pfizer_reserved_map)
-        self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer=reservedPfizer,maxModerna=reservedModerna, trail="second")
+        self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer=reservedPfizer,maxModerna=reservedModerna, secondDose=True, trail="second")
         self.undistributedPfizer -= reservedPfizer
         self.undistributedModerna -= reservedModerna
 
@@ -316,7 +329,10 @@ class controlModel():
         # Distribute Resereved Vaccines
         self.distributeReservedVaccines()
         # Calculate Region Vaccine Percentages
-        regionVaccinePerc = self.calculateDistroPlan(self.reports)
+        if(self.algorithm != "even"):
+            regionVaccinePerc = self.calculateDistroPlan(self.reports)
+        else:
+            regionVaccinePerc = self.calculateDistroPlan(self.reports, force=[1,1,1,1,1,1,1,1,1])
         # Calculate Region Vaccine Total
         regionVaccineTotal = list(np.multiply(regionVaccinePerc,(self.undistributedModerna + self.undistributedPfizer)))
         # Distribute Pfizer Vaccines
@@ -363,15 +379,14 @@ class controlModel():
         return(self.state.get_day())
 
 if __name__ == "__main__":
-    """
     failed = False
     best_weights = []
     best_deaths = -1
     costs = []
     for infectionRate in range (1,25,1):
         print(infectionRate)
-        for highrisk in range (0,3,1):
-            for sus in range(0,3, 1):
+        for highrisk in range (0,1,1):
+            for sus in range(1,15, 1):
                 for pin in range(0, 25, 1):
                     failed = False
                     weights = [infectionRate,highrisk,sus,pin]
@@ -383,7 +398,7 @@ if __name__ == "__main__":
                         if(day > 1000):
                             notComplete = False
                             failed = True
-                            #print("FAILED")
+                            print("FAILED")
                     if(failed == False):
                         print("not failed " + str(c.getDeaths()))
                         #print("---------------")
@@ -402,13 +417,20 @@ if __name__ == "__main__":
     print(costs)
     a = np.asarray(costs)
     np.savetxt("foo1.csv", a, delimiter=",")
+
     """
-    weights = [2,0,0,19]
+    weights = [2,0,1,19]
     c = controlModel(3, 3,weights)
+    algorithm = "even"
+    c.setControlAlgorithm(algorithm=algorithm)
     notComplete = True
     while notComplete:
         notComplete = c.tick_time()
         #print(c.getPercentVaccinated(c.reports,mul100=True))
-    print(weights)
-    print(c.getDay())
-    print(c.getDeaths())
+    if(algorithm == "weighted"):
+        print(weights)
+    else:
+        print(algorithm)
+    print("Days: ", c.getDay())
+    print("Deaths: ", c.getDeaths())
+"""

@@ -47,23 +47,25 @@ class RegionModel:
         self.vacTypes = {"pfizer": pfizer, "moderna":moderna}
 
 
-    def addVaccPfizer(self, count, trail=""):
+    def addVaccPfizer(self, count, secondDose=False, trail=""):
         self.vaccine_pfizer_count += count
-        if(self.name == 1):
-            if(trail != ""):
-                print("I needed: ", self.vacTypes['pfizer'].rollingSevenDaySum(), "p")
-                print("I got:", count)
+        self.vacTypes['pfizer'].addVaccines(count, secondDose=secondDose) 
+        #if(self.name == 1):
+        #    if(trail != ""):
+        #        print("I needed: ", self.vacTypes['pfizer'].rollingSevenDaySum(), "p")
+        #        print("I got:", count)
 
 
         #if(count==8024):
         #    print(self.name, "recieved the vaccc")
 
-    def addVaccModerna(self, count, trail=""):
+    def addVaccModerna(self, count, secondDose=False, trail=""):
         self.vaccine_moderna_count += count
-        if(self.name == 1):
-            if(trail != ""):
-                print("I needed: ", self.vacTypes['moderna'].rollingSevenDaySum(), "m")
-                print("I got:", count)
+        self.vacTypes['moderna'].addVaccines(count, secondDose=secondDose)
+        #if(self.name == 1):
+        #    if(trail != ""):
+        #        print("I needed: ", self.vacTypes['moderna'].rollingSevenDaySum(), "m")
+        #        print("I got:", count)
 
 
 
@@ -79,8 +81,8 @@ class RegionModel:
         #else:
             #print(self.name, t, self.startDate)
 
-        self.vacTypes['pfizer'].addVaccines(self.vaccine_pfizer_count)
-        self.vacTypes['moderna'].addVaccines(self.vaccine_moderna_count)
+        #self.vacTypes['pfizer'].addVaccines(self.vaccine_pfizer_count) 
+        #self.vacTypes['moderna'].addVaccines(self.vaccine_moderna_count)
         self.vaccine_moderna_count = 0
         self.vaccine_pfizer_count = 0
 
@@ -99,10 +101,10 @@ class RegionModel:
                 #    print("Q is long enough!")
                 #    print("FOL", FOL)
                 #    print("RV", v.remainingVaccines(), vacDailyLimit)
-                if((v.remainingVaccines() > 0) and (vacDailyLimit > 0)):
-                    vmax = min(FOL, min(v.remainingVaccines(),vacDailyLimit))
+                if((v.remainingSecondDose() > 0) and (vacDailyLimit > 0)):
+                    vmax = min(FOL, min(v.remainingSecondDose(),vacDailyLimit))
                     vmax = max(vmax, 0)
-                v.vaccinate(vmax)
+                v.vaccinate(vmax, secondDose=True)
                 vacDailyLimit -= vmax
                 d_vacB += vmax 
                 remaining = max(0, FOL - vmax) #We couldnt vaccinate everyone :(
@@ -114,9 +116,9 @@ class RegionModel:
         for vName in self.vacTypes:
             v = self.vacTypes[vName]
             vmax = 0
-            if((v.remainingVaccines() > 0) and (vacDailyLimit > 0)):
+            if((v.remainingFirstDose() > 0) and (vacDailyLimit > 0)):
                 #print(self.name, "Left", v.remainingVaccines())
-                vmax = min(eligibleForVaccineToday, min(v.remainingVaccines(),vacDailyLimit))
+                vmax = min(eligibleForVaccineToday, min(v.remainingFirstDose(),vacDailyLimit))
                 vmax = max(vmax, 0)
             
 

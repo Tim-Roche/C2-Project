@@ -60,7 +60,7 @@ def writeToScreen(canvas):
 
 pygame.init()
 clock = pygame.time.Clock()
-screen = pygame.display.set_mode((1000, 700))
+screen = pygame.display.set_mode((1025, 700))
 font = pygame.font.SysFont(None, 30)
 font2 = pygame.font.SysFont(None, 50)
 # defining a font
@@ -75,7 +75,7 @@ totalDay = []
 totalDead = []
 totalVaccinated = []
 totalSusHR = []
-weights = [2,0,0,19]
+weights = [2,0,2,19]
 c = controlModel(columns, rows, weights)
 s = c.state
 
@@ -207,6 +207,8 @@ go = True
 notComplete = True
 finalDay = -1
 finalDeaths = -1
+c.setControlAlgorithm(algorithm="weighted")
+#c.setControlAlgorithm(algorithm="even")
 while True: 
     mouse = pygame.mouse.get_pos()
 
@@ -229,7 +231,6 @@ while True:
         stateReport = c.getCurrentStateReport()
     else:
         addTextbox("Start", (buttonX+30,buttonY+5), size="button")
-    
             
     surf = plotRegionStats(reports, stateReport)
     screen.blit(surf, (-10,300))
@@ -242,21 +243,24 @@ while True:
     addTextbox("COVID-19 Dashboard", (400, 10))
 
     if(notComplete):
-        addTextbox("Pfizer Unused: " + str(int(stateReport.get_pfizer())), (770, 90))
-        addTextbox("Moderna Unused: " + str(int(stateReport.get_moderna())), (740, 110))
+        addTextbox("Pfizer Unused: " + str(round(stateReport.get_pfizer()/1000,2)) + "k", (755, 110))
+        addTextbox("Moderna Unused: " + str(round(stateReport.get_moderna()/1000,2)) + "k", (755, 130))
         if(c.getDeaths() < 1000):
-            addTextbox("Total Deaths: " + str(int(c.getDeaths())), (784, 130))   
+            addTextbox("Total Deaths: " + str(int(c.getDeaths())), (755, 150))   
         else:
-            addTextbox("Total Deaths: " + str(int(c.getDeaths()/1000)) + "k", (784, 130))  
+            addTextbox("Total Deaths: " + str(round(c.getDeaths()/1000, 3)) + "k", (755, 150))  
         if(sum(c.getSusceptible(reports)) < 1):
-            addTextbox("All First-Doses Delivered! ", (755, 150))
+            addTextbox("All First-Doses Delivered! ", (755, 90))
+        else:
+            addTextbox("Vaccinations Underway ", (755, 90))
     else:
         if((finalDay == -1) and (finalDeaths == -1)):
             finalDay = c.getDay()
             finalDeaths = c.getDeaths()
-        addTextbox("All Persons Vaccinated!", (760, 90))
-        addTextbox("Final Day: " + str(finalDay), (760, 110))
-        addTextbox("Final Deaths: " + str(round(c.getDeaths()/1000,3)) + "k", (760, 130))     
+        addTextbox("All Persons Vaccinated!", (755, 90))
+        addTextbox("Final Day: " + str(finalDay), (755, 110))
+        addTextbox("Total Vaccinated: " + str(round(c.getTotalVaccinated(reports)/1000,3)) + "k", (755, 130))
+        addTextbox("Final Deaths: " + str(round(c.getDeaths()/1000,3)) + "k", (755, 150))     
       
     for event in pygame.event.get():
         if event.type == QUIT:
