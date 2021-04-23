@@ -5,6 +5,8 @@ from vaccine import vaccine
 import math
 import random
 
+#FIX Seperate first and second dose vaccines
+
 class RegionModel:
     def __init__(self, isSmallRegion=False, name=0, seed = 123456, noise=False, N=1000, HRR=0.25, I0=1, R0=0, beta=0.2, gamma=1./20,startDate=0):
         self.name = name
@@ -45,15 +47,24 @@ class RegionModel:
         self.vacTypes = {"pfizer": pfizer, "moderna":moderna}
 
 
-    def addVaccPfizer(self, count):
+    def addVaccPfizer(self, count, trail=""):
         self.vaccine_pfizer_count += count
-        #if(self.name == 1):
-        #    print("New Pfizer!", count)
+        if(self.name == 1):
+            if(trail != ""):
+                print("I needed: ", self.vacTypes['pfizer'].rollingSevenDaySum(), "p")
+                print("I got:", count)
+
+
         #if(count==8024):
         #    print(self.name, "recieved the vaccc")
 
-    def addVaccModerna(self, count):
+    def addVaccModerna(self, count, trail=""):
         self.vaccine_moderna_count += count
+        if(self.name == 1):
+            if(trail != ""):
+                print("I needed: ", self.vacTypes['moderna'].rollingSevenDaySum(), "m")
+                print("I got:", count)
+
 
 
 
@@ -104,6 +115,7 @@ class RegionModel:
             v = self.vacTypes[vName]
             vmax = 0
             if((v.remainingVaccines() > 0) and (vacDailyLimit > 0)):
+                #print(self.name, "Left", v.remainingVaccines())
                 vmax = min(eligibleForVaccineToday, min(v.remainingVaccines(),vacDailyLimit))
                 vmax = max(vmax, 0)
             
@@ -169,6 +181,7 @@ class RegionModel:
         rolling7_M = self.vacTypes['moderna'].rollingSevenDaySum()
 
         inQ = sum(self.vacTypes['pfizer'].vac_q) + sum(self.vacTypes['moderna'].vac_q)
+        #print(self.name, inQ)
         s = self.susceptible[t] + self.infected[t] + inQ + self.vaccinated[t] + self.recovered[t] + self.dead[t]
         #if(self.name == 1):
             #print("Remaining Vaccs" + str(v.remainingVaccines()))

@@ -228,10 +228,13 @@ class controlModel():
         moderna_reserved_map = []
         for cr in reports:
             for report in cr:   
-                pfizer_reserved = report.get_rollingSevenDays_P()
-                moderna_reserved = report.get_rollingSevenDays_M()
+                dlim =  report.get_distroLimit()
+                pfizer_reserved = min(report.get_rollingSevenDays_P(), dlim)
+                moderna_reserved = min(report.get_rollingSevenDays_M(), report.get_distroLimit())
+                moderna_reserved = min(moderna_reserved, dlim - pfizer_reserved)
                 pfizer_reserved_map.append(pfizer_reserved)
                 moderna_reserved_map.append(moderna_reserved)
+                print(dlim, pfizer_reserved+moderna_reserved)
 
         reservedPfizer = sum(pfizer_reserved_map)
         reservedModerna = sum(moderna_reserved_map)
@@ -255,7 +258,7 @@ class controlModel():
     def distributeReservedVaccines(self):
         pfizer_reserved_map, moderna_reserved_map, reservedPfizer, reservedModerna = self.calculateReservedVaccines(self.reports)
         #print(pfizer_reserved_map)
-        self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer=reservedPfizer,maxModerna=reservedModerna)
+        self.state.distribute_vaccines(pfizer_reserved_map, moderna_reserved_map, maxPfizer=reservedPfizer,maxModerna=reservedModerna, trail="second")
         self.undistributedPfizer -= reservedPfizer
         self.undistributedModerna -= reservedModerna
 
@@ -283,7 +286,11 @@ class controlModel():
         return regionTotals
 
     def getPointsPerRegion(self):
-        return([round(r,2) for r in self.pointsPerRegion])
+        total = sum(self.pointsPerRegion)
+        if(total > 0):
+            return([round(r/total,2) for r in self.pointsPerRegion])
+        else:
+            return([0 for r in self.pointsPerRegion])
 
     def tick_time(self, verbose=False):
         notComplete = True
@@ -309,7 +316,7 @@ class controlModel():
         # Distribute Resereved Vaccines
         self.distributeReservedVaccines()
         # Calculate Region Vaccine Percentages
-        regionVaccinePerc = self.calculateDistroPlan(self.reports) #, force=[1,1,1,1,1,1,1,1,1]
+        regionVaccinePerc = self.calculateDistroPlan(self.reports)
         # Calculate Region Vaccine Total
         regionVaccineTotal = list(np.multiply(regionVaccinePerc,(self.undistributedModerna + self.undistributedPfizer)))
         # Distribute Pfizer Vaccines
@@ -317,7 +324,7 @@ class controlModel():
         # Distribute Moderna Vaccines
         self.distributeModernaVaccines(regionVaccineTotal)
         # Distribute Reserved Vaccines
-        self.distributeReservedVaccines()
+        #self.distributeReservedVaccines()
         # Distribute All Phizer Vaccines
 
 
@@ -361,11 +368,11 @@ if __name__ == "__main__":
     best_weights = []
     best_deaths = -1
     costs = []
-    for infectionRate in range (1,5,1):
+    for infectionRate in range (1,25,1):
         print(infectionRate)
-        for highrisk in range (0,5,1):
-            for sus in range(0, 5, 1):
-                for pin in range(0, 5, 1):
+        for highrisk in range (0,3,1):
+            for sus in range(0,3, 1):
+                for pin in range(0, 25, 1):
                     failed = False
                     weights = [infectionRate,highrisk,sus,pin]
                     c = controlModel(3, 3,weights)
@@ -395,8 +402,8 @@ if __name__ == "__main__":
     print(costs)
     a = np.asarray(costs)
     np.savetxt("foo1.csv", a, delimiter=",")
-"""
-    weights = [17,0,0,15]
+    """
+    weights = [2,0,0,19]
     c = controlModel(3, 3,weights)
     notComplete = True
     while notComplete:
