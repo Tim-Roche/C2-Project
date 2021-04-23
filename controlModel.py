@@ -56,7 +56,9 @@ class controlModel():
         #print(allRegionVaccinations)
         return(allRegionVaccinations)    
 
-    def scale(self, values, weight):
+    def scale(self, values, weight, m=False):
+        if(m):
+            values = [v**6 for v in values]
         if(sum(values) > 0):
             return([(weight*value)/sum(values) for value in values])  
         else:
@@ -214,18 +216,21 @@ class controlModel():
         normInfRate = self.scale(self.getInfectionRate(reports),self.weights[0]) #self.getPRRpercentInfections(reports)
         #print(normInfRate)
         normHR = self.scale(self.getPercentageHighRisk(reports),self.weights[1]) #self.getPRRpercentageHighRisk(reports)
-        normSus = self.scale(self.getPercentVaccinated(reports, inverse=True),self.weights[2]) #self.getPRR_R0(reports)
+        #normSus = self.scale(self.getPercentVaccinated(reports, inverse=True),self.weights[2]) #self.getPRR_R0(reports)
+        normSus = self.scale(self.getSusceptible(reports),self.weights[2],m=True)
         #normPIN =  self.scale(self.getPercentageInfections(reports),self.weights[3])
         #lim =  self.scale(self.getVaccineLimit(reports),self.weights[3])
-        normPV = self.scale(self.getInfectionRateRate(reports), self.weights[3])
+        normPV = self.scale(self.getInfectionRateRate(reports), self.weights[3],)
         
         #print(self.roundList(list(normInfRate[0:3])))
         #print(self.roundList(list(normHR[0:3])))
         #print(self.roundList(list(normSus[0:3])))
         #print()
-        self.pointsPerRegion = list(np.add(normInfRate, normHR))
-        self.pointsPerRegion = np.add(self.pointsPerRegion, normSus)
-        self.pointsPerRegion = np.add(self.pointsPerRegion, normPV)
+        self.pointsPerRegion = list(np.add(normInfRate, normPV))
+        #if(self.pointsPerRegion == 0):
+        if(sum(self.pointsPerRegion) == 0):
+            self.pointsPerRegion = np.add(self.pointsPerRegion, normSus)
+        self.pointsPerRegion = np.add(self.pointsPerRegion, normHR)
         #print(self.getVaccineLimit(reports))
         overflowMask = [int(x >= 0) for x in self.getVaccineLimit(reports)]
         self.pointsPerRegion = np.multiply(self.pointsPerRegion, overflowMask)
@@ -384,11 +389,11 @@ if __name__ == "__main__":
     best_weights = []
     best_deaths = -1
     costs = []
-    for infectionRate in range (1,25,1):
+    for infectionRate in range (22,30,1):
         print(infectionRate)
-        for highrisk in range (0,1,1):
-            for sus in range(1,15, 1):
-                for pin in range(0, 25, 1):
+        for highrisk in [0]:
+            for sus in [1]:
+                for pin in range(22, 30, 1):
                     failed = False
                     weights = [infectionRate,highrisk,sus,pin]
                     c = controlModel(3, 3,weights)
@@ -417,12 +422,11 @@ if __name__ == "__main__":
 
     print(costs)
     a = np.asarray(costs)
-    np.savetxt("foo1.csv", a, delimiter=",")
+    np.savetxt("foo10123.csv", a, delimiter=",")
     """
-
-    weights = [1,0,1,5]
+    weights = [27,0,1,28]
     c = controlModel(3, 3,weights)
-    algorithm = "weighted" #"even"
+    algorithm = "even" #"weighted" #"
     c.setControlAlgorithm(algorithm=algorithm)
     notComplete = True
     while notComplete:
