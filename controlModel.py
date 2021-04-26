@@ -426,7 +426,7 @@ if __name__ == "__main__":
     """
     weights = [27,0,1,28]
     c = controlModel(3, 3,weights)
-    algorithm = "even" #"weighted" #"
+    algorithm = "weighted" #""even" #
     c.setControlAlgorithm(algorithm=algorithm)
     notComplete = True
     while notComplete:
